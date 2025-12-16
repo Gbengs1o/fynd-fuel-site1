@@ -1,0 +1,48 @@
+
+export const mockStations = [
+    {
+        id: 1,
+        name: 'TotalEnergies',
+        address: 'Admiralty Way, Lekki Phase 1, Lagos',
+        price: 650,
+        status: 'Available',
+        fuelTypes: ['Petrol', 'Diesel', 'Gas'],
+        distance: '0.5 km',
+    },
+    {
+        id: 2,
+        name: 'NNPC Retail',
+        address: 'Alfred Rewane Rd, Ikoyi, Lagos',
+        price: 630,
+        status: 'Busy',
+        fuelTypes: ['Petrol', 'Kerosene'],
+        distance: '2.1 km',
+    },
+    {
+        id: 3,
+        name: 'Shell',
+        address: 'Ozumba Mbadiwe Ave, Victoria Island, Lagos',
+        price: 655,
+        status: 'Available',
+        fuelTypes: ['Petrol', 'Diesel'],
+        distance: '3.4 km',
+    },
+    {
+        id: 4,
+        name: 'Mobil',
+        address: 'Awolowo Rd, Ikoyi, Lagos',
+        price: 645,
+        status: 'Unavailable',
+        fuelTypes: ['Petrol'],
+        distance: '4.0 km',
+    },
+    {
+        id: 5,
+        name: 'Oando',
+        address: 'Lekki-Epe Expy, Jakande',
+        price: 648,
+        status: 'Available',
+        fuelTypes: ['Petrol', 'Diesel', 'Gas', 'LPG'],
+        distance: '5.2 km',
+    },
+];

@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 250 250 249;
+    --foreground: 28 25 23;
+  }
+
+  body {
+    @apply bg-stone-50 text-stone-900 selection:bg-accent-200 selection:text-accent-900;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

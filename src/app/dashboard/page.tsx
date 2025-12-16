@@ -1,0 +1,804 @@
+'use client';
+
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { useRouter } from 'next/navigation';
+import ThemeToggle from '@/components/ThemeToggle';
+import MapBackground from '@/components/Map/GoogleMap';
+import { MapPin, Navigation, Search, Menu, X, Home, Heart, Settings, LogOut, Fuel, ChevronRight, Scan, Plus, Bookmark, Eye, Locate, Compass } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
+import { LetterAvatar } from '@/components/LetterAvatar';
+
+interface Station {
+    id: number;
+    name: string;
+    address: string;
+    price: number;
+    status: string;
+    fuelTypes: string[];
+    distance?: string;
+    lat: number;
+    lng: number;
+    brand?: string;
+    fuel_type?: string;
+}
+
+interface GeoJSONFeature {
+    type: string;
+    geometry: {
+        type: string;
+        coordinates: [number, number]; // [lng, lat]
+    };
+    properties: {
+        id: number;
+        name: string;
+        address?: string;
+        brand?: string;
+        price?: number;
+        fuel_type?: string;
+    };
+}
+
+interface GeoJSONData {
+    type: string;
+    features: GeoJSONFeature[];
+}
+
+export default function Dashboard() {
+    const router = useRouter();
+    const [user, setUser] = useState<any>(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [activeStation, setActiveStation] = useState<number | null>(null);
+    const [mobileView, setMobileView] = useState<'list' | 'map'>('map');
+    const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
+    const [showQuickActions, setShowQuickActions] = useState(false);
+    const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
+    const [locationName, setLocationName] = useState<string>('Locating...');
+    const [stations, setStations] = useState<Station[]>([]);
+    const [stationGeoJSON, setStationGeoJSON] = useState<GeoJSONData | null>(null);
+    const [trackedStations, setTrackedStations] = useState<Set<number>>(new Set());
+    const [nearbyCount, setNearbyCount] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Check user session
+    useEffect(() => {
+        const checkUser = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) router.push('/login');
+            else setUser(session.user);
+        };
+        checkUser();
+    }, [router]);
+
+    // Fetch real station data from Supabase (GeoJSON)
+    useEffect(() => {
+        const fetchStations = async () => {
+            setIsLoading(true);
+            try {
+                // Call the same RPC function as the mobile app
+                const { data, error } = await supabase.rpc('get_stations_geojson');
+
+                if (error) {
+                    console.error('Error fetching stations:', error);
+                    return;
+                }
+
+                if (data) {
+                    setStationGeoJSON(data);
+
+                    // Convert GeoJSON features to Station array for the list view
+                    const stationList: Station[] = data.features.map((feature: GeoJSONFeature) => ({
+                        id: feature.properties.id,
+                        name: feature.properties.name,
+                        address: feature.properties.address || 'Address not available',
+                        price: feature.properties.price || 0,
+                        status: 'Available', // Default status since not in GeoJSON
+                        fuelTypes: feature.properties.fuel_type ? [feature.properties.fuel_type] : ['PMS'],
+                        lat: feature.geometry.coordinates[1],
+                        lng: feature.geometry.coordinates[0],
+                        brand: feature.properties.brand,
+                        fuel_type: feature.properties.fuel_type,
+                    }));
+
+                    setStations(stationList);
+                    setNearbyCount(stationList.length);
+                }
+            } catch (err) {
+                console.error('Failed to fetch stations:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchStations();
+    }, []);
+
+    // Fetch user's tracked/favourite stations
+    useEffect(() => {
+        const fetchTrackedStations = async () => {
+            if (!user) return;
+
+            const { data, error } = await supabase
+                .from('favourite_stations')
+                .select('station_id')
+                .eq('user_id', user.id);
+
+            if (data) {
+                setTrackedStations(new Set(data.map(f => f.station_id)));
+            }
+        };
+
+        if (user) {
+            fetchTrackedStations();
+        }
+    }, [user]);
+
+    // Get user location
+    useEffect(() => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const { latitude, longitude } = position.coords;
+                    setUserLocation({ lat: latitude, lng: longitude });
+
+                    // Reverse geocode for location name
+                    try {
+                        const response = await fetch(
+                            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY}`
+                        );
+                        const data = await response.json();
+                        if (data.results && data.results[0]) {
+                            const addressComponents = data.results[0].address_components;
+                            const neighborhood = addressComponents.find((c: any) => c.types.includes('neighborhood'))?.long_name;
+                            const locality = addressComponents.find((c: any) => c.types.includes('locality'))?.long_name;
+                            setLocationName(neighborhood || locality || 'Current Location');
+                        }
+                    } catch (error) {
+                        setLocationName('Lagos, Nigeria');
+                    }
+                },
+                () => {
+                    setUserLocation({ lat: 6.5244, lng: 3.3792 }); // Lagos default
+                    setLocationName('Lagos, Nigeria');
+                }
+            );
+        }
+    }, []);
+
+    // Calculate nearby stations based on user location
+    useEffect(() => {
+        if (userLocation && stations.length > 0) {
+            const nearby = stations.filter(station => {
+                const distance = getDistance(userLocation.lat, userLocation.lng, station.lat, station.lng);
+                return distance <= 10; // 10km radius
+            });
+            setNearbyCount(nearby.length);
+        }
+    }, [stations, userLocation]);
+
+    // Helper function to calculate distance between two points (Haversine)
+    const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+        const R = 6371; // Earth's radius in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+
+    const handleSignOut = async () => {
+        await supabase.auth.signOut();
+        router.push('/login');
+    };
+
+    const handleScanArea = async () => {
+        if (!userLocation) return;
+
+        setIsScanning(true);
+        setShowQuickActions(false);
+
+        try {
+            // Call the scan-area edge function just like the mobile app
+            const { data, error } = await supabase.functions.invoke('scan-area', {
+                body: { lat: userLocation.lat, lon: userLocation.lng }
+            });
+
+            if (error) throw error;
+
+            if (data?.status === 'scanned') {
+                // Refresh station data after scan
+                const { data: stationData } = await supabase.rpc('get_stations_geojson');
+                if (stationData) {
+                    setStationGeoJSON(stationData);
+                    const stationList: Station[] = stationData.features.map((feature: GeoJSONFeature) => ({
+                        id: feature.properties.id,
+                        name: feature.properties.name,
+                        address: feature.properties.address || 'Address not available',
+                        price: feature.properties.price || 0,
+                        status: 'Available',
+                        fuelTypes: feature.properties.fuel_type ? [feature.properties.fuel_type] : ['PMS'],
+                        lat: feature.geometry.coordinates[1],
+                        lng: feature.geometry.coordinates[0],
+                        brand: feature.properties.brand,
+                    }));
+                    setStations(stationList);
+                }
+                alert(`✨ Scan Complete! ${data.message || `Found ${data.count || 0} new stations.`}`);
+            } else if (data?.status === 'cached') {
+                alert(`ℹ️ ${data.message || 'This area has already been scanned recently.'}`);
+            }
+        } catch (error: any) {
+            console.error('Scan failed:', error);
+            alert('Scan failed. Please try again.');
+        } finally {
+            setIsScanning(false);
+        }
+    };
+
+    const handleRecenter = () => {
+        if (userLocation && navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                setUserLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+            });
+        }
+    };
+
+    const handleTrackStation = async (stationId: number) => {
+        if (!user) {
+            alert('Please sign in to track stations.');
+            return;
+        }
+
+        const isCurrentlyTracked = trackedStations.has(stationId);
+
+        try {
+            if (isCurrentlyTracked) {
+                // Remove from favourites
+                await supabase
+                    .from('favourite_stations')
+                    .delete()
+                    .match({ user_id: user.id, station_id: stationId });
+
+                setTrackedStations(prev => {
+                    const newSet = new Set(prev);
+                    newSet.delete(stationId);
+                    return newSet;
+                });
+            } else {
+                // Add to favourites
+                await supabase
+                    .from('favourite_stations')
+                    .insert({ user_id: user.id, station_id: stationId, notifications_enabled: true });
+
+                setTrackedStations(prev => new Set(prev).add(stationId));
+            }
+        } catch (error: any) {
+            console.error('Track station error:', error);
+            alert('Failed to update tracking. Please try again.');
+        }
+    };
+
+    const filteredStations = stations.filter(station =>
+        station.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        station.address.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const selectedStation = stations.find(s => s.id === activeStation);
+
+    return (
+        <div className="h-screen flex bg-[#F5F5F0] dark:bg-[#1A1A1A] text-[#1A1A1A] dark:text-white">
+
+            {/* Grain Texture */}
+            <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.03] mix-blend-multiply dark:mix-blend-overlay"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}>
+            </div>
+
+            {/* Sidebar - Desktop */}
+            <aside className="hidden lg:flex lg:w-80 lg:flex-col lg:fixed lg:inset-y-0 bg-white dark:bg-[#1A1A1A] border-r border-[#3B0764]/10 dark:border-white/10 z-40">
+                {/* Logo */}
+                <div className="flex items-center gap-3 px-6 py-6 border-b border-[#3B0764]/10 dark:border-white/10">
+                    <div className="w-12 h-12 rounded-2xl bg-[#3B0764] flex items-center justify-center">
+                        <Fuel className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                        <h1 className="font-serif font-bold text-xl tracking-tight">Fynd Fuel</h1>
+                        <p className="text-xs text-[#1A1A1A]/60 dark:text-white/60">Precision fuel discovery</p>
+                    </div>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex-1 px-4 py-6 space-y-2">
+                    <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-[#3B0764] text-white font-medium">
+                        <Home className="w-5 h-5" />
+                        Dashboard
+                    </Link>
+                    <Link href="/dashboard/search" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
+                        <Search className="w-5 h-5" />
+                        Find Gas
+                    </Link>
+                    <Link href="/dashboard/favorites" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
+                        <Heart className="w-5 h-5" />
+                        Tracked Stations
+                        {trackedStations.size > 0 && (
+                            <span className="ml-auto bg-[#3B0764] text-white text-xs px-2 py-0.5 rounded-full">{trackedStations.size}</span>
+                        )}
+                    </Link>
+                    <Link href="/dashboard/submit-station" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
+                        <Plus className="w-5 h-5" />
+                        Suggest Station
+                    </Link>
+                    <Link href="#" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
+                        <Settings className="w-5 h-5" />
+                        Settings
+                    </Link>
+                </nav>
+
+
+
+                {/* User Profile */}
+                <div className="p-4 border-t border-[#3B0764]/10 dark:border-white/10">
+                    <Link href="/dashboard/profile" className="flex items-center gap-3 p-4 rounded-2xl bg-[#F5F5F0] dark:bg-white/5 hover:bg-[#3B0764]/5 dark:hover:bg-white/10 transition-colors group">
+                        <LetterAvatar name={user?.email || 'User'} className="w-11 h-11 text-lg" />
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold truncate group-hover:text-[#3B0764] dark:group-hover:text-white transition-colors">{user?.email}</p>
+                            <p className="text-xs text-[#1A1A1A]/50 dark:text-white/50">Free Plan</p>
+                        </div>
+                    </Link>
+                    <button
+                        onClick={handleSignOut}
+                        className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-sm font-medium"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        Sign Out
+                    </button>
+                </div>
+            </aside>
+
+            {/* Mobile Sidebar Overlay */}
+            <AnimatePresence>
+                {sidebarOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="lg:hidden fixed inset-0 z-50"
+                    >
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+                        <motion.aside
+                            initial={{ x: -320 }}
+                            animate={{ x: 0 }}
+                            exit={{ x: -320 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="fixed inset-y-0 left-0 w-80 bg-white dark:bg-[#1A1A1A] shadow-2xl"
+                        >
+                            <div className="flex items-center justify-between px-6 py-5 border-b border-[#3B0764]/10 dark:border-white/10">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-[#3B0764] flex items-center justify-center">
+                                        <Fuel className="w-5 h-5 text-white" />
+                                    </div>
+                                    <h1 className="font-serif font-bold text-lg">Fynd Fuel</h1>
+                                </div>
+                                <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-[#F5F5F0] dark:hover:bg-white/5">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <nav className="flex-1 px-4 py-6 space-y-2">
+                                <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-[#3B0764] text-white font-medium">
+                                    <Home className="w-5 h-5" />
+                                    Dashboard
+                                </Link>
+                                <Link href="/dashboard/search" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
+                                    <Search className="w-5 h-5" />
+                                    Find Gas
+                                </Link>
+                                <Link href="/dashboard/favorites" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
+                                    <Heart className="w-5 h-5" />
+                                    Tracked Stations
+                                </Link>
+                                <Link href="/dashboard/submit-station" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
+                                    <Plus className="w-5 h-5" />
+                                    Suggest Station
+                                </Link>
+                                <Link href="#" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
+                                    <Settings className="w-5 h-5" />
+                                    Settings
+                                </Link>
+                            </nav>
+                            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[#3B0764]/10 dark:border-white/10">
+                                <button
+                                    onClick={handleSignOut}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-red-50 dark:bg-red-950/20 text-red-500 font-medium"
+                                >
+                                    <LogOut className="w-4 h-4" />
+                                    Sign Out
+                                </button>
+                            </div>
+                        </motion.aside>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Main Content */}
+            <main className="flex-1 lg:pl-80 flex flex-col h-full relative">
+
+                {/* Map takes full screen on mobile */}
+                <div className={`absolute inset-0 ${mobileView === 'map' || typeof window !== 'undefined' && window.innerWidth >= 1024 ? 'block' : 'hidden lg:block'}`}>
+                    <MapBackground
+                        stations={filteredStations}
+                        userLocation={userLocation || undefined}
+                        onStationClick={(station) => router.push(`/station/${station.id}`)}
+                    />
+                </div>
+
+                {/* Top Bar - Floating */}
+                <header className="relative z-30 m-4 lg:m-6">
+                    <div className="bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-xl rounded-2xl border border-[#3B0764]/10 dark:border-white/10 shadow-lg">
+                        <div className="flex items-center gap-3 px-4 py-3">
+                            {/* Mobile Menu Button */}
+                            <button
+                                onClick={() => setSidebarOpen(true)}
+                                className="lg:hidden p-2 rounded-xl hover:bg-[#F5F5F0] dark:hover:bg-white/5"
+                            >
+                                <Menu className="w-5 h-5" />
+                            </button>
+
+                            {/* Search Bar */}
+                            <div className="flex-1 relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/40 dark:text-white/40" />
+                                <input
+                                    type="text"
+                                    placeholder="Search fuel stations..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    // Navigate to advanced search on Enter
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            router.push(`/dashboard/search`);
+                                        }
+                                    }}
+                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F5F5F0] dark:bg-white/5 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B0764]"
+                                />
+                            </div>
+
+                            <ThemeToggle />
+                        </div>
+                    </div>
+                </header>
+
+                {/* Control Panel - Bottom */}
+                <div className="absolute bottom-6 left-4 right-4 lg:left-6 lg:right-auto z-30">
+                    <div className="bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-xl rounded-2xl border border-[#3B0764]/10 dark:border-white/10 shadow-lg p-4 lg:min-w-[360px]">
+                        <div className="flex items-center justify-between">
+                            {/* Stats */}
+                            <div className="flex items-center gap-6">
+                                <div className="text-center">
+                                    <p className="text-2xl font-bold text-[#3B0764] dark:text-white">{nearbyCount}</p>
+                                    <p className="text-xs text-[#1A1A1A]/50 dark:text-white/50 uppercase tracking-wider">Nearby</p>
+                                </div>
+                                <div className="w-px h-10 bg-[#3B0764]/10 dark:bg-white/10" />
+                                <div className="flex-1">
+                                    <p className="font-semibold truncate">{locationName}</p>
+                                    <div className="flex items-center gap-1 text-xs text-[#1A1A1A]/50 dark:text-white/50">
+                                        <MapPin className="w-3 h-3" />
+                                        <span>Current Location</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Control Buttons */}
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleRecenter}
+                                    className="w-11 h-11 rounded-xl bg-[#F5F5F0] dark:bg-white/5 flex items-center justify-center hover:bg-[#3B0764] hover:text-white transition-colors"
+                                >
+                                    <Locate className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* FAB Button */}
+                <div className="absolute bottom-28 right-4 lg:right-6 z-30">
+                    <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setShowQuickActions(true)}
+                        className="w-14 h-14 rounded-full bg-gradient-to-br from-[#3B0764] to-[#5C0CA7] text-white flex items-center justify-center shadow-lg shadow-[#3B0764]/30"
+                    >
+                        <Plus className="w-6 h-6" />
+                    </motion.button>
+                </div>
+
+                {/* Station List Panel - Desktop */}
+                <div className={`absolute top-24 right-4 lg:right-6 bottom-24 w-[360px] z-30 hidden lg:block`}>
+                    <div className="h-full bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-xl rounded-2xl border border-[#3B0764]/10 dark:border-white/10 shadow-lg overflow-hidden flex flex-col">
+                        <div className="px-4 py-3 border-b border-[#3B0764]/10 dark:border-white/10 flex items-center justify-between">
+                            <h2 className="font-semibold">Nearby Stations</h2>
+                            <span className="text-xs text-[#1A1A1A]/50 dark:text-white/50">{filteredStations.length} found</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                            {filteredStations.map((station) => (
+                                <motion.div
+                                    key={station.id}
+                                    layout
+                                    onClick={() => setActiveStation(station.id === activeStation ? null : station.id)}
+                                    className={`p-4 rounded-2xl cursor-pointer transition-all border ${activeStation === station.id
+                                        ? 'bg-[#3B0764]/5 dark:bg-[#3B0764]/20 border-[#3B0764]'
+                                        : 'bg-white dark:bg-white/5 border-transparent hover:border-[#3B0764]/20'
+                                        }`}
+                                >
+                                    <div className="flex items-start justify-between mb-2">
+                                        <div className="flex-1 min-w-0">
+                                            <h3 className="font-semibold truncate">{station.name}</h3>
+                                            <p className="text-xs text-[#1A1A1A]/50 dark:text-white/50 flex items-center gap-1 mt-0.5 truncate">
+                                                <MapPin className="w-3 h-3 shrink-0" />
+                                                {station.address}
+                                            </p>
+                                        </div>
+                                        <span className={`shrink-0 ml-2 text-xs font-medium px-2 py-1 rounded-full ${station.status === 'Available' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                            station.status === 'Busy' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                            }`}>
+                                            {station.status}
+                                        </span>
+                                    </div>
+                                    <div className="flex items-end justify-between">
+                                        <div>
+                                            <p className="text-xl font-bold text-[#3B0764] dark:text-white">₦{station.price}</p>
+                                            <p className="text-xs text-[#1A1A1A]/40 dark:text-white/40">per liter (PMS)</p>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); handleTrackStation(station.id); }}
+                                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${trackedStations.has(station.id)
+                                                    ? 'bg-[#3B0764] text-white'
+                                                    : 'bg-[#F5F5F0] dark:bg-white/5 text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/10'
+                                                    }`}
+                                            >
+                                                <Bookmark className="w-4 h-4" fill={trackedStations.has(station.id) ? 'currentColor' : 'none'} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); router.push(`/station/${station.id}`); }}
+                                                className="w-9 h-9 rounded-xl bg-[#3B0764] text-white flex items-center justify-center hover:bg-[#4C0D8C] transition-colors"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Selected Station Popup */}
+                <AnimatePresence>
+                    {selectedStation && (
+                        <motion.div
+                            initial={{ y: 100, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 100, opacity: 0 }}
+                            className="lg:hidden absolute bottom-28 left-4 right-4 z-40"
+                        >
+                            <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl shadow-2xl border border-[#3B0764]/10 dark:border-white/10 overflow-hidden">
+                                <div className="bg-gradient-to-r from-[#3B0764] to-[#5C0CA7] p-4">
+                                    <div className="flex items-start justify-between">
+                                        <div>
+                                            <p className="text-xs text-white/70 uppercase tracking-wider">{selectedStation.brand || 'Fuel Station'}</p>
+                                            <h3 className="text-xl font-bold text-white">{selectedStation.name}</h3>
+                                        </div>
+                                        <button
+                                            onClick={() => setActiveStation(null)}
+                                            className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"
+                                        >
+                                            <X className="w-4 h-4 text-white" />
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="p-4">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-9 h-9 rounded-xl bg-[#F5F5F0] dark:bg-white/5 flex items-center justify-center">
+                                            <MapPin className="w-4 h-4 text-[#3B0764]" />
+                                        </div>
+                                        <p className="text-sm text-[#1A1A1A]/70 dark:text-white/70">{selectedStation.address}</p>
+                                    </div>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-9 h-9 rounded-xl bg-[#F5F5F0] dark:bg-white/5 flex items-center justify-center">
+                                            <Fuel className="w-4 h-4 text-[#3B0764]" />
+                                        </div>
+                                        <p className="text-sm">
+                                            <span className="font-bold text-[#3B0764] dark:text-white">₦{selectedStation.price}/L</span>
+                                            <span className="text-[#1A1A1A]/50 dark:text-white/50"> • PMS</span>
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => handleTrackStation(selectedStation.id)}
+                                            className={`flex-1 py-3 rounded-xl font-medium flex items-center justify-center gap-2 ${trackedStations.has(selectedStation.id)
+                                                ? 'bg-green-500 text-white'
+                                                : 'bg-[#F5F5F0] dark:bg-white/5 text-[#1A1A1A] dark:text-white'
+                                                }`}
+                                        >
+                                            <Bookmark className="w-4 h-4" fill={trackedStations.has(selectedStation.id) ? 'currentColor' : 'none'} />
+                                            {trackedStations.has(selectedStation.id) ? 'Tracking' : 'Track'}
+                                        </button>
+                                        <button
+                                            onClick={() => router.push(`/station/${selectedStation.id}`)}
+                                            className="flex-1 py-3 rounded-xl bg-[#3B0764] text-white font-medium flex items-center justify-center gap-2 hover:bg-[#4C0D8C] transition-colors"
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                            Details
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Quick Actions Modal */}
+                <AnimatePresence>
+                    {showQuickActions && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-50 flex items-end justify-center"
+                            onClick={() => setShowQuickActions(false)}
+                        >
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+                            <motion.div
+                                initial={{ y: 300 }}
+                                animate={{ y: 0 }}
+                                exit={{ y: 300 }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                className="relative w-full max-w-lg bg-white dark:bg-[#1A1A1A] rounded-t-3xl p-6 pb-10"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <div className="w-10 h-1 bg-[#1A1A1A]/20 dark:bg-white/20 rounded-full mx-auto mb-6" />
+                                <h2 className="text-xl font-bold mb-6">Quick Actions</h2>
+
+                                <div className="space-y-3">
+                                    <button
+                                        onClick={handleScanArea}
+                                        className="w-full flex items-center gap-4 p-4 rounded-2xl bg-[#F5F5F0] dark:bg-white/5 hover:bg-[#3B0764]/5 dark:hover:bg-white/10 transition-colors"
+                                    >
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#667eea] to-[#764ba2] flex items-center justify-center">
+                                            <Scan className="w-6 h-6 text-white" />
+                                        </div>
+                                        <div className="flex-1 text-left">
+                                            <p className="font-semibold">Scan Area</p>
+                                            <p className="text-sm text-[#1A1A1A]/50 dark:text-white/50">Find missing stations nearby</p>
+                                        </div>
+                                        <ChevronRight className="w-5 h-5 text-[#1A1A1A]/30 dark:text-white/30" />
+                                    </button>
+
+                                    <button
+                                        onClick={() => router.push('/dashboard/submit-station')}
+                                        className="w-full flex items-center gap-4 p-4 rounded-2xl bg-[#F5F5F0] dark:bg-white/5 hover:bg-[#3B0764]/5 dark:hover:bg-white/10 transition-colors"
+                                    >
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#f093fb] to-[#f5576c] flex items-center justify-center">
+                                            <Plus className="w-6 h-6 text-white" />
+                                        </div>
+                                        <div className="flex-1 text-left">
+                                            <p className="font-semibold">Suggest Station</p>
+                                            <p className="text-sm text-[#1A1A1A]/50 dark:text-white/50">Add a new fuel station</p>
+                                        </div>
+                                        <ChevronRight className="w-5 h-5 text-[#1A1A1A]/30 dark:text-white/30" />
+                                    </button>
+
+                                    <button
+                                        onClick={() => router.push('/dashboard/search')}
+                                        className="w-full flex items-center gap-4 p-4 rounded-2xl bg-[#F5F5F0] dark:bg-white/5 hover:bg-[#3B0764]/5 dark:hover:bg-white/10 transition-colors"
+                                    >
+                                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#4facfe] to-[#00f2fe] flex items-center justify-center">
+                                            <Search className="w-6 h-6 text-white" />
+                                        </div>
+                                        <div className="flex-1 text-left">
+                                            <p className="font-semibold">Find Gas</p>
+                                            <p className="text-sm text-[#1A1A1A]/50 dark:text-white/50">Search for stations</p>
+                                        </div>
+                                        <ChevronRight className="w-5 h-5 text-[#1A1A1A]/30 dark:text-white/30" />
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Loading Overlay */}
+                <AnimatePresence>
+                    {isScanning && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm flex items-center justify-center"
+                        >
+                            <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl p-8 shadow-2xl flex flex-col items-center">
+                                <div className="w-12 h-12 border-4 border-[#3B0764]/20 border-t-[#3B0764] rounded-full animate-spin mb-4" />
+                                <p className="font-semibold">Scanning area...</p>
+                                <p className="text-sm text-[#1A1A1A]/50 dark:text-white/50">Finding nearby stations</p>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Mobile View Toggle */}
+                <div className="lg:hidden absolute bottom-0 left-0 right-0 z-20 bg-white dark:bg-[#1A1A1A] border-t border-[#3B0764]/10 dark:border-white/10 flex">
+                    <button
+                        onClick={() => setMobileView('map')}
+                        className={`flex-1 py-4 text-sm font-medium text-center transition-colors ${mobileView === 'map' ? 'text-[#3B0764] dark:text-white bg-[#3B0764]/5 dark:bg-white/5' : 'text-[#1A1A1A]/50 dark:text-white/50'}`}
+                    >
+                        Map View
+                    </button>
+                    <button
+                        onClick={() => setMobileView('list')}
+                        className={`flex-1 py-4 text-sm font-medium text-center transition-colors ${mobileView === 'list' ? 'text-[#3B0764] dark:text-white bg-[#3B0764]/5 dark:bg-white/5' : 'text-[#1A1A1A]/50 dark:text-white/50'}`}
+                    >
+                        Station List
+                    </button>
+                </div>
+
+                {/* Mobile Station List */}
+                <AnimatePresence>
+                    {mobileView === 'list' && (
+                        <motion.div
+                            initial={{ y: '100%' }}
+                            animate={{ y: 0 }}
+                            exit={{ y: '100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="lg:hidden absolute inset-0 z-20 bg-white dark:bg-[#1A1A1A] pt-20 pb-16"
+                        >
+                            <div className="h-full overflow-y-auto p-4 space-y-3">
+                                {filteredStations.map((station) => (
+                                    <div
+                                        key={station.id}
+                                        onClick={() => {
+                                            setActiveStation(station.id);
+                                            setMobileView('map');
+                                        }}
+                                        className="p-4 rounded-2xl bg-[#F5F5F0] dark:bg-white/5 border border-transparent hover:border-[#3B0764]/20"
+                                    >
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div className="flex-1 min-w-0">
+                                                <h3 className="font-semibold truncate">{station.name}</h3>
+                                                <p className="text-xs text-[#1A1A1A]/50 dark:text-white/50 flex items-center gap-1 mt-0.5 truncate">
+                                                    <MapPin className="w-3 h-3 shrink-0" />
+                                                    {station.address}
+                                                </p>
+                                            </div>
+                                            <span className={`shrink-0 ml-2 text-xs font-medium px-2 py-1 rounded-full ${station.status === 'Available' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                                                station.status === 'Busy' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                                                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                                }`}>
+                                                {station.status}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-end justify-between">
+                                            <div>
+                                                <p className="text-xl font-bold text-[#3B0764] dark:text-white">₦{station.price}</p>
+                                                <p className="text-xs text-[#1A1A1A]/40 dark:text-white/40">per liter (PMS)</p>
+                                            </div>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); router.push(`/station/${station.id}`); }}
+                                                className="w-10 h-10 rounded-xl bg-[#3B0764] text-white flex items-center justify-center hover:bg-[#4C0D8C] transition-colors"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+            </main>
+        </div>
+    );
+}
