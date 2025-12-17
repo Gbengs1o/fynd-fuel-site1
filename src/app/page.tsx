@@ -1,12 +1,27 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Fuel, MapPin, Shield, Star, ArrowRight, Menu, CheckCircle } from 'lucide-react';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { Fuel, MapPin, Shield, Star, ArrowRight, Menu, CheckCircle, X } from 'lucide-react';
+import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
+
+const heroImages = [
+  "/heroimage1.png",
+  "/heroimage2.png",
+  "/heroimage3.png"
+];
 
 export default function Home() {
   const containerRef = useRef(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % heroImages.length);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   // --- MAJESTIC SCROLL LOGIC ---
   const { scrollYProgress } = useScroll({
@@ -63,9 +78,39 @@ export default function Home() {
               Get App
             </Link>
           </div>
-          <Menu className="md:hidden text-white mix-blend-difference" />
+          <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden text-white mix-blend-difference z-50">
+            <Menu />
+          </button>
         </div>
       </nav>
+
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="fixed inset-0 z-[100] bg-[#1a1a1a] text-white flex flex-col p-6"
+          >
+            <div className="flex justify-between items-center mb-10">
+              <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 border-[1.5px] border-white rounded-full flex items-center justify-center">
+                    <Fuel size={18} />
+                 </div>
+                 <span className="font-serif font-bold text-2xl tracking-tighter">Fynd Fuel</span>
+              </div>
+              <button onClick={() => setIsMobileMenuOpen(false)}>
+                <X size={32} />
+              </button>
+            </div>
+            <div className="flex flex-col gap-6 text-2xl font-serif">
+              <Link href="/mission" onClick={() => setIsMobileMenuOpen(false)}>Mission</Link>
+              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Map</Link>
+              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Get App</Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <main ref={containerRef} className="relative">
 
@@ -85,12 +130,19 @@ export default function Home() {
                 style={{ scale: scale, borderRadius: borderRadius }}
                 className="relative w-full h-full overflow-hidden shadow-2xl bg-[#1a1a1a]"
               >
-                {/* High-Res Image */}
-                <img
-                  src="/hero-image.png"
-                  alt="Majestic Road"
-                  className="w-full h-full object-cover"
-                />
+                {/* High-Res Image Carousel */}
+                <AnimatePresence mode="popLayout">
+                  <motion.img
+                    key={currentImageIndex}
+                    src={heroImages[currentImageIndex]}
+                    alt="Hero Carousel"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    initial={{ x: "100%" }}
+                    animate={{ x: 0 }}
+                    exit={{ x: "-100%" }}
+                    transition={{ duration: 0.8, ease: "easeInOut" }}
+                  />
+                </AnimatePresence>
 
                 {/* Dark Overlay that gets darker on scroll */}
                 <motion.div
