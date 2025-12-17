@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Home, Heart, Settings, Map, List } from 'lucide-react';
+import { Heart, Settings, Map, List } from 'lucide-react';
 
 interface MobileNavProps {
     viewMode: 'list' | 'map';

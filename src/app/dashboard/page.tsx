@@ -70,6 +70,7 @@ export default function Dashboard() {
             else setUser(session.user);
         };
         checkUser();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router]);
 
     // Fetch real station data from Supabase (GeoJSON)
