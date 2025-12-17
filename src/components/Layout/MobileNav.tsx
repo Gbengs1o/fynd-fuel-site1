@@ -1,7 +1,8 @@
 
 'use client';
 
-import { Heart, Settings, Map, List } from 'lucide-react';
+import { Heart, Map, List, User } from 'lucide-react';
+import Link from 'next/link';
 
 interface MobileNavProps {
     viewMode: 'list' | 'map';
@@ -32,10 +33,10 @@ export default function MobileNav({ viewMode, setViewMode }: MobileNavProps) {
                 <span className="text-[10px] font-bold">Saved</span>
             </button>
 
-            <button className="flex flex-col items-center justify-center w-full h-full space-y-1 text-[var(--foreground)] opacity-50">
-                <Settings size={22} />
-                <span className="text-[10px] font-bold">Settings</span>
-            </button>
+            <Link href="/dashboard/profile" className="flex flex-col items-center justify-center w-full h-full space-y-1 text-[var(--foreground)] opacity-50">
+                <User size={22} />
+                <span className="text-[10px] font-bold">Profile</span>
+            </Link>
         </nav>
     );
 }

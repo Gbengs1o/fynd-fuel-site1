@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/ThemeToggle';
 import MapBackground from '@/components/Map/GoogleMap';
-import { MapPin, Navigation, Search, Menu, X, Home, Heart, Settings, LogOut, Fuel, ChevronRight, Scan, Plus, Bookmark, Eye, Locate, Compass } from 'lucide-react';
+import { MapPin, Navigation, Search, Menu, X, Home, Heart, User, LogOut, Fuel, ChevronRight, Scan, Plus, Bookmark, Eye, Locate, Compass } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { LetterAvatar } from '@/components/LetterAvatar';
@@ -332,9 +332,9 @@ export default function Dashboard() {
                         <Plus className="w-5 h-5" />
                         Suggest Station
                     </Link>
-                    <Link href="#" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
-                        <Settings className="w-5 h-5" />
-                        Settings
+                    <Link href="/dashboard/profile" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
+                        <User className="w-5 h-5" />
+                        Profile
                     </Link>
                 </nav>
 
@@ -404,9 +404,9 @@ export default function Dashboard() {
                                     <Plus className="w-5 h-5" />
                                     Suggest Station
                                 </Link>
-                                <Link href="#" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
-                                    <Settings className="w-5 h-5" />
-                                    Settings
+                                <Link href="/dashboard/profile" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
+                                    <User className="w-5 h-5" />
+                                    Profile
                                 </Link>
                             </nav>
                             <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[#3B0764]/10 dark:border-white/10">

@@ -17,7 +17,7 @@ export default function Logo({ className, ...props }: React.SVGProps<SVGSVGEleme
         >
             <defs>
                 <style type="text/css">
-                    {`.fil0 {fill:#5C0CA7}`}
+                    {`.fil0 {fill: currentColor}`}
                 </style>
             </defs>
             <g id="Layer_x0020_1">
