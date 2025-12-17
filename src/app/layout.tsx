@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Playfair_Display, Lato } from "next/font/google";
 import "./globals.css";
+import SplashWrapper from "@/components/SplashWrapper";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -28,7 +29,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${playfair.variable} ${lato.variable}`}>
       <body className="font-sans antialiased text-stone-800 bg-stone-50">
-        {children}
+        <SplashWrapper>
+          {children}
+        </SplashWrapper>
       </body>
     </html>
   );
