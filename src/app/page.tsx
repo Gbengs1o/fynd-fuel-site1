@@ -209,7 +209,7 @@ export default function Home() {
                   <div>
                     <h3 className="font-serif text-4xl mb-4 text-[#1A1A1A]">Curated Mapping</h3>
                     <p className="text-[#1A1A1A]/60 text-lg leading-relaxed">
-                      Our maps aren't auto-generated. They are verified by a community of enthusiasts who ensure every pin is precise.
+                      Our maps aren&apos;t auto-generated. They are verified by a community of enthusiasts who ensure every pin is precise.
                     </p>
                   </div>
                   <div className="absolute right-0 bottom-0 w-64 h-64 translate-x-1/3 translate-y-1/3">

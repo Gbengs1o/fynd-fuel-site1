@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
 
 export default function ThemeToggle() {
+    // Initialize state based on localStorage if available (client-side only logic)
     const [isDark, setIsDark] = useState(false);
 
     useEffect(() => {
-        // Check for saved preference or system preference
+        // This runs only on client mount
         const savedTheme = localStorage.getItem('theme');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
@@ -15,6 +16,7 @@ export default function ThemeToggle() {
             setIsDark(true);
             document.documentElement.classList.add('dark');
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const toggleTheme = () => {

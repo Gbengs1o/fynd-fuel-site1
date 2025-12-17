@@ -1,7 +1,8 @@
 
 'use client';
 
-import { Home, Heart, Settings, LogOut } from 'lucide-react';
+import { Home, Heart, LogOut, User } from 'lucide-react';
+import Link from 'next/link';
 import Logo from '@/components/Logo';
 
 interface SidebarProps {
@@ -24,9 +25,9 @@ export default function Sidebar({ userEmail, onSignOut }: SidebarProps) {
                 <button className="flex items-center gap-3 w-full p-3 rounded-lg text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors font-medium opacity-70 hover:opacity-100">
                     <Heart size={20} /> Favorites
                 </button>
-                <button className="flex items-center gap-3 w-full p-3 rounded-lg text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors font-medium opacity-70 hover:opacity-100">
-                    <Settings size={20} /> Settings
-                </button>
+                <Link href="/dashboard/profile" className="flex items-center gap-3 w-full p-3 rounded-lg text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors font-medium opacity-70 hover:opacity-100">
+                    <User size={20} /> Profile
+                </Link>
             </nav>
 
             <div className="p-4 border-t border-[var(--border)] shrink-0">
