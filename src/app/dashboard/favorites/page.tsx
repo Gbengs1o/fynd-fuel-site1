@@ -176,7 +176,7 @@ export default function FavoritesPage() {
             <header className="sticky top-0 z-30 bg-white/90 dark:bg-[#1A1A1A]/90 backdrop-blur-md border-b border-[#3B0764]/10 dark:border-white/10 px-4 py-3">
                 <div className="max-w-3xl mx-auto flex items-center gap-4">
                     <button
-                        onClick={() => router.back()}
+                        onClick={() => router.push('/dashboard')}
                         className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5 text-[#1A1A1A] dark:text-white" />

@@ -5,10 +5,11 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/ThemeToggle';
 import MapBackground from '@/components/Map/GoogleMap';
-import { MapPin, Navigation, Search, Menu, X, Home, Heart, User, LogOut, Fuel, ChevronRight, Scan, Plus, Bookmark, Eye, Locate, Compass } from 'lucide-react';
+import { MapPin, Navigation, Search, Menu, X, Home, Heart, User, LogOut, Fuel, ChevronRight, Scan, Plus, Bookmark, Eye, Locate, Compass, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { LetterAvatar } from '@/components/LetterAvatar';
+import Logo from '@/components/Logo';
 
 interface Station {
     id: number;
@@ -303,7 +304,7 @@ export default function Dashboard() {
                 {/* Logo */}
                 <div className="flex items-center gap-3 px-6 py-6 border-b border-[#3B0764]/10 dark:border-white/10">
                     <div className="w-12 h-12 rounded-2xl bg-[#3B0764] flex items-center justify-center">
-                        <Fuel className="w-6 h-6 text-white" />
+                        <Logo className="w-6 h-6 text-white" />
                     </div>
                     <div>
                         <h1 className="font-serif font-bold text-xl tracking-tight">Fynd Fuel</h1>
@@ -379,7 +380,7 @@ export default function Dashboard() {
                             <div className="flex items-center justify-between px-6 py-5 border-b border-[#3B0764]/10 dark:border-white/10">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-[#3B0764] flex items-center justify-center">
-                                        <Fuel className="w-5 h-5 text-white" />
+                                        <Logo className="w-5 h-5 text-white" />
                                     </div>
                                     <h1 className="font-serif font-bold text-lg">Fynd Fuel</h1>
                                 </div>
@@ -431,7 +432,9 @@ export default function Dashboard() {
                     <MapBackground
                         stations={filteredStations}
                         userLocation={userLocation || undefined}
-                        onStationClick={(station) => router.push(`/station/${station.id}`)}
+                        selectedStation={selectedStation}
+                        onStationClick={(station) => setActiveStation(station.id)}
+                        onClosePopup={() => setActiveStation(null)}
                     />
                 </div>
 
@@ -465,6 +468,12 @@ export default function Dashboard() {
                                 />
                             </div>
 
+                            <Link
+                                href="/dashboard/notifications"
+                                className="p-2 rounded-xl text-[#1A1A1A]/40 dark:text-white/40 hover:bg-[#F5F5F0] dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors"
+                            >
+                                <Bell className="w-5 h-5" />
+                            </Link>
                             <ThemeToggle />
                         </div>
                     </div>

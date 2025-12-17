@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import {
     Settings, LogOut, Camera, Star, TrendingUp, User, Leaf,
     Tag, MapPin, MessageCircle, Phone, Building2, ChevronRight,
-    Trophy, Bell, Bookmark
+    Trophy, Bell, Bookmark, ArrowLeft
 } from 'lucide-react';
 import { LetterAvatar } from '@/components/LetterAvatar';
 import LoadingAnimation from '@/components/LoadingAnimation';
@@ -147,8 +147,21 @@ export default function ProfilePage() {
 
     return (
         <div className="min-h-screen bg-[#F5F5F0] dark:bg-[#121212] pb-20">
+            {/* Grain Texture */}
+            <div className="fixed inset-0 pointer-events-none z-[100] opacity-[0.03] mix-blend-multiply dark:mix-blend-overlay"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}>
+            </div>
+
             {/* Header */}
             <div className="bg-white dark:bg-[#1A1A1A] pb-8 pt-12 px-6 rounded-b-3xl shadow-sm border-b border-[#3B0764]/10 dark:border-white/10 relative overflow-hidden">
+                <div className="absolute top-4 left-4">
+                    <button
+                        onClick={() => router.push('/dashboard')}
+                        className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors group"
+                    >
+                        <ArrowLeft className="w-6 h-6 text-[#1A1A1A]/60 dark:text-white/60 group-hover:text-[#3B0764] dark:group-hover:text-white" />
+                    </button>
+                </div>
                 <div className="absolute top-4 right-4 flex gap-2">
                     <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                         <Settings className="w-6 h-6 text-[#1A1A1A]/60 dark:text-white/60" />

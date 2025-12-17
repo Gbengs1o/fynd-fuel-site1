@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Home, Heart, LogOut, User } from 'lucide-react';
+import { Home, Heart, LogOut, User, Bell } from 'lucide-react';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
 
@@ -14,8 +14,13 @@ export default function Sidebar({ userEmail, onSignOut }: SidebarProps) {
     return (
         <aside className="w-64 bg-white dark:bg-black border-r border-[var(--border)] hidden md:flex flex-col h-full z-20 shadow-sm">
             <div className="p-6 flex items-center gap-3 border-b border-[var(--border)] shrink-0">
-                <Logo className="w-8 h-8 text-[var(--primary)]" />
-                <span className="font-bold text-xl tracking-tight">Fynd Fuel</span>
+                <div className="w-10 h-10 rounded-xl bg-[#3B0764] flex items-center justify-center text-white shadow-sm">
+                    <Logo className="w-6 h-6" />
+                </div>
+                <div>
+                    <span className="font-bold text-xl tracking-tight block leading-none">Fynd Fuel</span>
+                    <span className="text-[10px] text-gray-500 font-medium tracking-wider uppercase">Precision fuel discovery</span>
+                </div>
             </div>
 
             <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
@@ -27,6 +32,9 @@ export default function Sidebar({ userEmail, onSignOut }: SidebarProps) {
                 </button>
                 <Link href="/dashboard/profile" className="flex items-center gap-3 w-full p-3 rounded-lg text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors font-medium opacity-70 hover:opacity-100">
                     <User size={20} /> Profile
+                </Link>
+                <Link href="/dashboard/notifications" className="flex items-center gap-3 w-full p-3 rounded-lg text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors font-medium opacity-70 hover:opacity-100">
+                    <Bell size={20} /> Notifications
                 </Link>
             </nav>
 

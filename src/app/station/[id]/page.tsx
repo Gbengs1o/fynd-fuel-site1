@@ -410,7 +410,7 @@ export default function StationProfilePage() {
             <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-xl border-b border-[#3B0764]/10 dark:border-white/10">
                 <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
                     <button
-                        onClick={() => router.back()}
+                        onClick={() => router.push('/dashboard')}
                         className="w-10 h-10 rounded-xl bg-[#F5F5F0] dark:bg-white/5 flex items-center justify-center hover:bg-[#3B0764]/10 transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5" />
@@ -481,8 +481,8 @@ export default function StationProfilePage() {
                             onClick={handleToggleTrack}
                             disabled={isTrackingLoading}
                             className={`py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors ${isTracked
-                                    ? 'bg-green-500 text-white'
-                                    : 'bg-[#F5F5F0] dark:bg-white/5 border border-green-500 text-green-500'
+                                ? 'bg-green-500 text-white'
+                                : 'bg-[#F5F5F0] dark:bg-white/5 border border-green-500 text-green-500'
                                 }`}
                         >
                             <Bookmark className="w-4 h-4" fill={isTracked ? 'currentColor' : 'none'} />
@@ -492,8 +492,8 @@ export default function StationProfilePage() {
                             onClick={handleFlagToggle}
                             disabled={isFlagging}
                             className={`py-3 rounded-xl font-medium flex items-center justify-center gap-2 transition-colors ${isFlagged
-                                    ? 'bg-red-500 text-white'
-                                    : 'bg-[#F5F5F0] dark:bg-white/5 border border-red-500 text-red-500'
+                                ? 'bg-red-500 text-white'
+                                : 'bg-[#F5F5F0] dark:bg-white/5 border border-red-500 text-red-500'
                                 }`}
                         >
                             <Flag className="w-4 h-4" fill={isFlagged ? 'currentColor' : 'none'} />

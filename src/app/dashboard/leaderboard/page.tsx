@@ -96,7 +96,7 @@ export default function LeaderboardPage() {
             {/* Header */}
             <div className="bg-white dark:bg-[#1A1A1A] pt-6 pb-6 rounded-b-[40px] shadow-sm border-b border-[#3B0764]/5 dark:border-white/5 relative z-10">
                 <div className="flex items-center px-4 mb-4 relative">
-                    <button onClick={() => router.back()} className="absolute left-4 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
+                    <button onClick={() => router.push('/dashboard')} className="absolute left-4 p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
                         <ArrowLeft className="w-5 h-5 text-[#1A1A1A] dark:text-white" />
                     </button>
                     <h1 className="flex-1 text-center font-bold text-lg text-[#1A1A1A] dark:text-white">Leaderboard</h1>

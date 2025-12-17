@@ -268,7 +268,7 @@ export default function SearchPage() {
             <div className="bg-white dark:bg-[#1A1A1A] rounded-b-3xl shadow-sm px-4 pt-4 pb-6 sticky top-0 z-40">
                 <div className="flex justify-between items-center mb-4 max-w-3xl mx-auto w-full">
                     <div className="flex items-center gap-3">
-                        <button onClick={() => router.back()} className="lg:hidden">
+                        <button onClick={() => router.push('/dashboard')} className="lg:hidden">
                             <ArrowLeft className="w-6 h-6 text-[#1A1A1A] dark:text-white" />
                         </button>
                         <div>
