@@ -162,12 +162,13 @@ export default function ProfilePage() {
                         <ArrowLeft className="w-6 h-6 text-[#1A1A1A]/60 dark:text-white/60 group-hover:text-[#3B0764] dark:group-hover:text-white" />
                     </button>
                 </div>
-                <div className="absolute top-4 right-4 flex gap-2">
-                    <button className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                        <Settings className="w-6 h-6 text-[#1A1A1A]/60 dark:text-white/60" />
-                    </button>
-                    <button onClick={handleSignOut} className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                        <LogOut className="w-6 h-6 text-[#1A1A1A]/60 dark:text-white/60 hover:text-red-500" />
+                <div className="absolute top-4 right-4">
+                    <button
+                        onClick={handleSignOut}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all hover:scale-105 active:scale-95 group"
+                    >
+                        <LogOut className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        <span className="text-sm font-bold text-red-600 dark:text-red-400">Sign Out</span>
                     </button>
                 </div>
 

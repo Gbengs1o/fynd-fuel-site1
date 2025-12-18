@@ -62,6 +62,7 @@ export default function Dashboard() {
     const [trackedStations, setTrackedStations] = useState<Set<number>>(new Set());
     const [nearbyCount, setNearbyCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
+    const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Check user session
     useEffect(() => {
@@ -291,6 +292,12 @@ export default function Dashboard() {
 
     const selectedStation = stations.find(s => s.id === activeStation);
 
+    const handlePlaceSelected = useCallback((location: { lat: number, lng: number }, placeName: string) => {
+        setUserLocation(location);
+        setLocationName(placeName);
+        setSearchTerm('');
+    }, []);
+
     return (
         <div className="h-screen flex bg-[#F5F5F0] dark:bg-[#1A1A1A] text-[#1A1A1A] dark:text-white">
 
@@ -302,7 +309,7 @@ export default function Dashboard() {
             {/* Sidebar - Desktop */}
             <aside className="hidden lg:flex lg:w-80 lg:flex-col lg:fixed lg:inset-y-0 bg-white dark:bg-[#1A1A1A] border-r border-[#3B0764]/10 dark:border-white/10 z-40">
                 {/* Logo */}
-                <div className="flex items-center gap-3 px-6 py-6 border-b border-[#3B0764]/10 dark:border-white/10">
+                <div className="flex items-center gap-3 px-6 py-6 border-b border-[#3B0764]/10 dark:border-white/10 shrink-0">
                     <div className="w-12 h-12 rounded-2xl bg-[#3B0764] flex items-center justify-center">
                         <Logo className="w-6 h-6 text-white" />
                     </div>
@@ -312,51 +319,51 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* Navigation */}
-                <nav className="flex-1 px-4 py-6 space-y-2">
-                    <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-[#3B0764] text-white font-medium">
-                        <Home className="w-5 h-5" />
-                        Dashboard
-                    </Link>
-                    <Link href="/dashboard/search" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
-                        <Search className="w-5 h-5" />
-                        Find Gas
-                    </Link>
-                    <Link href="/dashboard/favorites" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
-                        <Heart className="w-5 h-5" />
-                        Tracked Stations
-                        {trackedStations.size > 0 && (
-                            <span className="ml-auto bg-[#3B0764] text-white text-xs px-2 py-0.5 rounded-full">{trackedStations.size}</span>
-                        )}
-                    </Link>
-                    <Link href="/dashboard/submit-station" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
-                        <Plus className="w-5 h-5" />
-                        Suggest Station
-                    </Link>
-                    <Link href="/dashboard/profile" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
-                        <User className="w-5 h-5" />
-                        Profile
-                    </Link>
-                </nav>
+                {/* Scrollable Navigation Container */}
+                <div className="flex-1 flex flex-col overflow-y-auto">
+                    {/* Navigation */}
+                    <nav className="flex-1 px-4 py-6 space-y-2">
+                        <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-[#3B0764] text-white font-medium">
+                            <Home className="w-5 h-5" />
+                            Dashboard
+                        </Link>
+                        <Link href="/dashboard/search" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
+                            <Search className="w-5 h-5" />
+                            Find Gas
+                        </Link>
+                        <Link href="/dashboard/favorites" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
+                            <Heart className="w-5 h-5" />
+                            Tracked Stations
+                            {trackedStations.size > 0 && (
+                                <span className="ml-auto bg-[#3B0764] text-white text-xs px-2 py-0.5 rounded-full">{trackedStations.size}</span>
+                            )}
+                        </Link>
+                        <Link href="/dashboard/submit-station" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
+                            <Plus className="w-5 h-5" />
+                            Suggest Station
+                        </Link>
+                        <Link href="/dashboard/profile" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
+                            <User className="w-5 h-5" />
+                            Profile
+                        </Link>
+                    </nav>
 
-
-
-                {/* User Profile */}
-                <div className="p-4 border-t border-[#3B0764]/10 dark:border-white/10">
-                    <Link href="/dashboard/profile" className="flex items-center gap-3 p-4 rounded-2xl bg-[#F5F5F0] dark:bg-white/5 hover:bg-[#3B0764]/5 dark:hover:bg-white/10 transition-colors group">
-                        <LetterAvatar name={user?.email || 'User'} className="w-11 h-11 text-lg" />
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold truncate group-hover:text-[#3B0764] dark:group-hover:text-white transition-colors">{user?.email}</p>
-                            <p className="text-xs text-[#1A1A1A]/50 dark:text-white/50">Free Plan</p>
-                        </div>
-                    </Link>
-                    <button
-                        onClick={handleSignOut}
-                        className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors text-sm font-medium"
-                    >
-                        <LogOut className="w-4 h-4" />
-                        Sign Out
-                    </button>
+                    {/* User Profile - Always visible at bottom */}
+                    <div className="p-4 border-t border-[#3B0764]/10 dark:border-white/10 shrink-0">
+                        <Link href="/dashboard/profile" className="flex items-center gap-3 p-4 rounded-2xl bg-[#F5F5F0] dark:bg-white/5 hover:bg-[#3B0764]/5 dark:hover:bg-white/10 transition-colors group">
+                            <LetterAvatar name={user?.email || 'User'} className="w-11 h-11 text-lg" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold truncate group-hover:text-[#3B0764] dark:group-hover:text-white transition-colors">{user?.email}</p>
+                            </div>
+                        </Link>
+                        <button
+                            onClick={handleSignOut}
+                            className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors text-sm font-bold"
+                        >
+                            <LogOut className="w-5 h-5" />
+                            Sign Out
+                        </button>
+                    </div>
                 </div>
             </aside>
 
@@ -375,9 +382,9 @@ export default function Dashboard() {
                             animate={{ x: 0 }}
                             exit={{ x: -320 }}
                             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                            className="fixed inset-y-0 left-0 w-80 bg-white dark:bg-[#1A1A1A] shadow-2xl"
+                            className="fixed inset-y-0 left-0 w-80 bg-white dark:bg-[#1A1A1A] shadow-2xl flex flex-col"
                         >
-                            <div className="flex items-center justify-between px-6 py-5 border-b border-[#3B0764]/10 dark:border-white/10">
+                            <div className="flex items-center justify-between px-6 py-5 border-b border-[#3B0764]/10 dark:border-white/10 shrink-0">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-[#3B0764] flex items-center justify-center">
                                         <Logo className="w-5 h-5 text-white" />
@@ -388,34 +395,40 @@ export default function Dashboard() {
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
-                            <nav className="flex-1 px-4 py-6 space-y-2">
-                                <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-[#3B0764] text-white font-medium">
-                                    <Home className="w-5 h-5" />
-                                    Dashboard
-                                </Link>
-                                <Link href="/dashboard/search" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
-                                    <Search className="w-5 h-5" />
-                                    Find Gas
-                                </Link>
-                                <Link href="/dashboard/favorites" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
-                                    <Heart className="w-5 h-5" />
-                                    Tracked Stations
-                                </Link>
-                                <Link href="/dashboard/submit-station" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
-                                    <Plus className="w-5 h-5" />
-                                    Suggest Station
-                                </Link>
-                                <Link href="/dashboard/profile" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
-                                    <User className="w-5 h-5" />
-                                    Profile
-                                </Link>
-                            </nav>
-                            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[#3B0764]/10 dark:border-white/10">
+
+                            {/* Scrollable Content */}
+                            <div className="flex-1 overflow-y-auto">
+                                <nav className="px-4 py-6 space-y-2">
+                                    <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-[#3B0764] text-white font-medium">
+                                        <Home className="w-5 h-5" />
+                                        Dashboard
+                                    </Link>
+                                    <Link href="/dashboard/search" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
+                                        <Search className="w-5 h-5" />
+                                        Find Gas
+                                    </Link>
+                                    <Link href="/dashboard/favorites" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
+                                        <Heart className="w-5 h-5" />
+                                        Tracked Stations
+                                    </Link>
+                                    <Link href="/dashboard/submit-station" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
+                                        <Plus className="w-5 h-5" />
+                                        Suggest Station
+                                    </Link>
+                                    <Link href="/dashboard/profile" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
+                                        <User className="w-5 h-5" />
+                                        Profile
+                                    </Link>
+                                </nav>
+                            </div>
+
+                            {/* Fixed Logout Button at Bottom */}
+                            <div className="p-4 border-t border-[#3B0764]/10 dark:border-white/10 shrink-0">
                                 <button
                                     onClick={handleSignOut}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-red-50 dark:bg-red-950/20 text-red-500 font-medium"
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors font-bold"
                                 >
-                                    <LogOut className="w-4 h-4" />
+                                    <LogOut className="w-5 h-5" />
                                     Sign Out
                                 </button>
                             </div>
@@ -435,75 +448,80 @@ export default function Dashboard() {
                         selectedStation={selectedStation}
                         onStationClick={(station) => setActiveStation(station.id)}
                         onClosePopup={() => setActiveStation(null)}
+                        onPlaceSelected={handlePlaceSelected}
+                        searchInputRef={searchInputRef}
                     />
                 </div>
 
                 {/* Top Bar - Floating */}
-                <header className="relative z-30 m-4 lg:m-6">
+                <header className="relative z-30 m-3 sm:m-4 lg:m-6">
                     <div className="bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-xl rounded-2xl border border-[#3B0764]/10 dark:border-white/10 shadow-lg">
-                        <div className="flex items-center gap-3 px-4 py-3">
+                        <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3">
                             {/* Mobile Menu Button */}
                             <button
                                 onClick={() => setSidebarOpen(true)}
-                                className="lg:hidden p-2 rounded-xl hover:bg-[#F5F5F0] dark:hover:bg-white/5"
+                                className="lg:hidden p-2 rounded-xl hover:bg-[#F5F5F0] dark:hover:bg-white/5 shrink-0"
                             >
                                 <Menu className="w-5 h-5" />
                             </button>
 
                             {/* Search Bar */}
-                            <div className="flex-1 relative">
+                            <div className="flex-1 relative min-w-0">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#1A1A1A]/40 dark:text-white/40" />
                                 <input
+                                    ref={searchInputRef}
                                     type="text"
-                                    placeholder="Search fuel stations..."
+                                    placeholder="Search places, stations..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    // Navigate to advanced search on Enter
                                     onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
+                                        if (e.key === 'Enter' && searchTerm.trim()) {
                                             router.push(`/dashboard/search`);
                                         }
                                     }}
-                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[#F5F5F0] dark:bg-white/5 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B0764]"
+                                    className="w-full pl-10 pr-2 sm:pr-4 py-2.5 rounded-xl bg-[#F5F5F0] dark:bg-white/5 border-0 text-sm focus:outline-none focus:ring-2 focus:ring-[#3B0764]"
                                 />
                             </div>
 
                             <Link
                                 href="/dashboard/notifications"
-                                className="p-2 rounded-xl text-[#1A1A1A]/40 dark:text-white/40 hover:bg-[#F5F5F0] dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors"
+                                className="p-2 rounded-xl text-[#1A1A1A]/40 dark:text-white/40 hover:bg-[#F5F5F0] dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors shrink-0"
                             >
                                 <Bell className="w-5 h-5" />
                             </Link>
-                            <ThemeToggle />
+                            <div className="shrink-0">
+                                <ThemeToggle />
+                            </div>
                         </div>
                     </div>
                 </header>
 
                 {/* Control Panel - Bottom */}
-                <div className="absolute bottom-6 left-4 right-4 lg:left-6 lg:right-auto z-30">
-                    <div className="bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-xl rounded-2xl border border-[#3B0764]/10 dark:border-white/10 shadow-lg p-4 lg:min-w-[360px]">
-                        <div className="flex items-center justify-between">
+                <div className="absolute bottom-20 left-3 right-3 sm:left-4 sm:right-4 lg:bottom-6 lg:left-6 lg:right-auto z-30">
+                    <div className="bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-xl rounded-2xl border border-[#3B0764]/10 dark:border-white/10 shadow-lg p-3 sm:p-4 lg:min-w-[360px] w-full lg:w-auto">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 sm:justify-between">
                             {/* Stats */}
-                            <div className="flex items-center gap-6">
+                            <div className="flex items-center gap-4 sm:gap-6">
                                 <div className="text-center">
-                                    <p className="text-2xl font-bold text-[#3B0764] dark:text-white">{nearbyCount}</p>
+                                    <p className="text-xl sm:text-2xl font-bold text-[#3B0764] dark:text-white">{nearbyCount}</p>
                                     <p className="text-xs text-[#1A1A1A]/50 dark:text-white/50 uppercase tracking-wider">Nearby</p>
                                 </div>
                                 <div className="w-px h-10 bg-[#3B0764]/10 dark:bg-white/10" />
-                                <div className="flex-1">
-                                    <p className="font-semibold truncate">{locationName}</p>
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-semibold truncate text-sm sm:text-base">{locationName}</p>
                                     <div className="flex items-center gap-1 text-xs text-[#1A1A1A]/50 dark:text-white/50">
-                                        <MapPin className="w-3 h-3" />
-                                        <span>Current Location</span>
+                                        <MapPin className="w-3 h-3 shrink-0" />
+                                        <span className="truncate">Current Location</span>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Control Buttons */}
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-end gap-2">
                                 <button
                                     onClick={handleRecenter}
-                                    className="w-11 h-11 rounded-xl bg-[#F5F5F0] dark:bg-white/5 flex items-center justify-center hover:bg-[#3B0764] hover:text-white transition-colors"
+                                    className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#F5F5F0] dark:bg-white/5 flex items-center justify-center hover:bg-[#3B0764] hover:text-white transition-colors shrink-0 touch-manipulation"
+                                    aria-label="Recenter map"
                                 >
                                     <Locate className="w-5 h-5" />
                                 </button>
@@ -513,13 +531,14 @@ export default function Dashboard() {
                 </div>
 
                 {/* FAB Button */}
-                <div className="absolute bottom-28 right-4 lg:right-6 z-30">
+                <div className="absolute bottom-36 right-3 sm:right-4 lg:bottom-28 lg:right-6 z-30">
                     <motion.button
                         whileTap={{ scale: 0.95 }}
                         onClick={() => setShowQuickActions(true)}
-                        className="w-14 h-14 rounded-full bg-gradient-to-br from-[#3B0764] to-[#5C0CA7] text-white flex items-center justify-center shadow-lg shadow-[#3B0764]/30"
+                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-br from-[#3B0764] to-[#5C0CA7] text-white flex items-center justify-center shadow-lg shadow-[#3B0764]/30 touch-manipulation"
+                        aria-label="Quick actions"
                     >
-                        <Plus className="w-6 h-6" />
+                        <Plus className="w-6 h-6 sm:w-7 sm:h-7" />
                     </motion.button>
                 </div>
 
@@ -592,32 +611,33 @@ export default function Dashboard() {
                             initial={{ y: 100, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             exit={{ y: 100, opacity: 0 }}
-                            className="lg:hidden absolute bottom-28 left-4 right-4 z-40"
+                            className="lg:hidden absolute bottom-44 left-3 right-3 sm:left-4 sm:right-4 z-40 max-w-md mx-auto"
                         >
                             <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl shadow-2xl border border-[#3B0764]/10 dark:border-white/10 overflow-hidden">
-                                <div className="bg-gradient-to-r from-[#3B0764] to-[#5C0CA7] p-4">
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <p className="text-xs text-white/70 uppercase tracking-wider">{selectedStation.brand || 'Fuel Station'}</p>
-                                            <h3 className="text-xl font-bold text-white">{selectedStation.name}</h3>
+                                <div className="bg-gradient-to-r from-[#3B0764] to-[#5C0CA7] p-3 sm:p-4">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs text-white/70 uppercase tracking-wider truncate">{selectedStation.brand || 'Fuel Station'}</p>
+                                            <h3 className="text-lg sm:text-xl font-bold text-white truncate">{selectedStation.name}</h3>
                                         </div>
                                         <button
                                             onClick={() => setActiveStation(null)}
-                                            className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"
+                                            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 touch-manipulation"
+                                            aria-label="Close"
                                         >
-                                            <X className="w-4 h-4 text-white" />
+                                            <X className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                                         </button>
                                     </div>
                                 </div>
-                                <div className="p-4">
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-9 h-9 rounded-xl bg-[#F5F5F0] dark:bg-white/5 flex items-center justify-center">
+                                <div className="p-3 sm:p-4">
+                                    <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#F5F5F0] dark:bg-white/5 flex items-center justify-center shrink-0">
                                             <MapPin className="w-4 h-4 text-[#3B0764]" />
                                         </div>
-                                        <p className="text-sm text-[#1A1A1A]/70 dark:text-white/70">{selectedStation.address}</p>
+                                        <p className="text-sm text-[#1A1A1A]/70 dark:text-white/70 truncate">{selectedStation.address}</p>
                                     </div>
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="w-9 h-9 rounded-xl bg-[#F5F5F0] dark:bg-white/5 flex items-center justify-center">
+                                    <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#F5F5F0] dark:bg-white/5 flex items-center justify-center shrink-0">
                                             <Fuel className="w-4 h-4 text-[#3B0764]" />
                                         </div>
                                         <p className="text-sm">
@@ -625,20 +645,20 @@ export default function Dashboard() {
                                             <span className="text-[#1A1A1A]/50 dark:text-white/50"> • PMS</span>
                                         </p>
                                     </div>
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-2 sm:gap-3">
                                         <button
                                             onClick={() => handleTrackStation(selectedStation.id)}
-                                            className={`flex-1 py-3 rounded-xl font-medium flex items-center justify-center gap-2 ${trackedStations.has(selectedStation.id)
+                                            className={`flex-1 py-3 sm:py-3.5 rounded-xl font-medium flex items-center justify-center gap-2 text-sm sm:text-base touch-manipulation transition-colors ${trackedStations.has(selectedStation.id)
                                                 ? 'bg-green-500 text-white'
-                                                : 'bg-[#F5F5F0] dark:bg-white/5 text-[#1A1A1A] dark:text-white'
+                                                : 'bg-[#F5F5F0] dark:bg-white/5 text-[#1A1A1A] dark:text-white hover:bg-[#3B0764]/10'
                                                 }`}
                                         >
                                             <Bookmark className="w-4 h-4" fill={trackedStations.has(selectedStation.id) ? 'currentColor' : 'none'} />
-                                            {trackedStations.has(selectedStation.id) ? 'Tracking' : 'Track'}
+                                            <span className="hidden xs:inline">{trackedStations.has(selectedStation.id) ? 'Tracking' : 'Track'}</span>
                                         </button>
                                         <button
                                             onClick={() => router.push(`/station/${selectedStation.id}`)}
-                                            className="flex-1 py-3 rounded-xl bg-[#3B0764] text-white font-medium flex items-center justify-center gap-2 hover:bg-[#4C0D8C] transition-colors"
+                                            className="flex-1 py-3 sm:py-3.5 rounded-xl bg-[#3B0764] text-white font-medium flex items-center justify-center gap-2 hover:bg-[#4C0D8C] transition-colors text-sm sm:text-base touch-manipulation"
                                         >
                                             <Eye className="w-4 h-4" />
                                             Details
@@ -739,16 +759,16 @@ export default function Dashboard() {
                 </AnimatePresence>
 
                 {/* Mobile View Toggle */}
-                <div className="lg:hidden absolute bottom-0 left-0 right-0 z-20 bg-white dark:bg-[#1A1A1A] border-t border-[#3B0764]/10 dark:border-white/10 flex">
+                <div className="lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-xl border-t border-[#3B0764]/10 dark:border-white/10 flex pb-safe">
                     <button
                         onClick={() => setMobileView('map')}
-                        className={`flex-1 py-4 text-sm font-medium text-center transition-colors ${mobileView === 'map' ? 'text-[#3B0764] dark:text-white bg-[#3B0764]/5 dark:bg-white/5' : 'text-[#1A1A1A]/50 dark:text-white/50'}`}
+                        className={`flex-1 py-4 text-sm sm:text-base font-medium text-center transition-all touch-manipulation ${mobileView === 'map' ? 'text-[#3B0764] dark:text-white bg-[#3B0764]/10 dark:bg-white/10 border-t-2 border-[#3B0764]' : 'text-[#1A1A1A]/50 dark:text-white/50 hover:bg-[#F5F5F0] dark:hover:bg-white/5'}`}
                     >
                         Map View
                     </button>
                     <button
                         onClick={() => setMobileView('list')}
-                        className={`flex-1 py-4 text-sm font-medium text-center transition-colors ${mobileView === 'list' ? 'text-[#3B0764] dark:text-white bg-[#3B0764]/5 dark:bg-white/5' : 'text-[#1A1A1A]/50 dark:text-white/50'}`}
+                        className={`flex-1 py-4 text-sm sm:text-base font-medium text-center transition-all touch-manipulation ${mobileView === 'list' ? 'text-[#3B0764] dark:text-white bg-[#3B0764]/10 dark:bg-white/10 border-t-2 border-[#3B0764]' : 'text-[#1A1A1A]/50 dark:text-white/50 hover:bg-[#F5F5F0] dark:hover:bg-white/5'}`}
                     >
                         Station List
                     </button>

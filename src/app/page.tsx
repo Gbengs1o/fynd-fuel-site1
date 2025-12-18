@@ -74,7 +74,7 @@ export default function Home() {
           <div className="hidden md:flex items-center gap-8 mix-blend-difference text-white font-medium text-sm tracking-wide">
             <Link href="/mission" className="hover:underline underline-offset-4 decoration-1">Mission</Link>
             <Link href="/login" className="hover:underline underline-offset-4 decoration-1">Map</Link>
-            <Link href="/login" className="px-6 py-2 bg-white text-black rounded-full font-bold hover:bg-[#F5F5F0] transition-colors">
+            <Link href="/download" className="px-6 py-2 bg-white text-black rounded-full font-bold hover:bg-[#F5F5F0] transition-colors">
               Get App
             </Link>
           </div>
@@ -94,10 +94,10 @@ export default function Home() {
           >
             <div className="flex justify-between items-center mb-10">
               <div className="flex items-center gap-3">
-                 <div className="w-10 h-10 border-[1.5px] border-white rounded-full flex items-center justify-center">
-                    <Fuel size={18} />
-                 </div>
-                 <span className="font-serif font-bold text-2xl tracking-tighter">Fynd Fuel</span>
+                <div className="w-10 h-10 border-[1.5px] border-white rounded-full flex items-center justify-center">
+                  <Fuel size={18} />
+                </div>
+                <span className="font-serif font-bold text-2xl tracking-tighter">Fynd Fuel</span>
               </div>
               <button onClick={() => setIsMobileMenuOpen(false)}>
                 <X size={32} />
@@ -106,7 +106,7 @@ export default function Home() {
             <div className="flex flex-col gap-6 text-2xl font-serif">
               <Link href="/mission" onClick={() => setIsMobileMenuOpen(false)}>Mission</Link>
               <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Map</Link>
-              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>Get App</Link>
+              <Link href="/download" onClick={() => setIsMobileMenuOpen(false)}>Get App</Link>
             </div>
           </motion.div>
         )}
@@ -251,7 +251,7 @@ export default function Home() {
                 <span className="font-serif italic text-2xl text-[#3B0764] mb-4">The Collection</span>
                 <h2 className="text-4xl md:text-5xl font-bold mb-10 tracking-tight text-[#1A1A1A]">Join the movement</h2>
                 <Link
-                  href="/login"
+                  href="/download"
                   className="group relative inline-flex items-center justify-center px-12 py-6 bg-[#1A1A1A] text-white rounded-full overflow-hidden transition-transform active:scale-95"
                 >
                   <span className="relative z-10 text-lg font-bold flex items-center gap-2">
@@ -266,7 +266,7 @@ export default function Home() {
 
           {/* Footer */}
           <footer className="mt-20 pt-10 border-t border-[#3B0764]/5 text-center">
-            <p className="text-[#1A1A1A]/40 text-sm font-serif">© 2024 Fynd Fuel. Crafted with patience.</p>
+            <p className="text-[#1A1A1A]/40 text-sm font-serif">© 2025 Fynd Fuel. Crafted with patience.</p>
           </footer>
         </div>
 

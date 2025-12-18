@@ -4,34 +4,55 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Fuel, Mail, Lock, Loader2, ArrowRight, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { Fuel, Mail, Lock, Loader2, ArrowRight, ArrowLeft, Eye, EyeOff, User, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function LoginPage() {
+export default function SignUpPage() {
     const router = useRouter();
-    const [isLogin, setIsLogin] = useState(true);
+    const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
 
-    const handleAuth = async (e: React.FormEvent) => {
+    const handleSignUp = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!fullName || !email || !phone || !password) {
+            setError('Please fill out all fields.');
+            return;
+        }
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters.');
+            return;
+        }
+        if (password !== confirmPassword) {
+            setError('Passwords do not match.');
+            return;
+        }
+
         setLoading(true);
         setError('');
 
         try {
-            if (isLogin) {
-                const { error } = await supabase.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-                router.push('/dashboard');
-            } else {
-                const { error } = await supabase.auth.signUp({ email, password });
-                if (error) throw error;
-                setError('Check your email to confirm your account!');
-                setIsLogin(true);
-            }
+            const { error } = await supabase.auth.signUp({
+                email: email.trim().toLowerCase(),
+                password: password,
+                options: {
+                    data: {
+                        full_name: fullName.trim(),
+                        phone: phone.trim()
+                    }
+                },
+            });
+
+            if (error) throw error;
+
+            setError('Success! Please check your email to verify your account.');
+            setTimeout(() => router.push('/login'), 3000);
         } catch (err: unknown) {
             setError(err instanceof Error ? err.message : 'An error occurred');
         } finally {
@@ -49,10 +70,9 @@ export default function LoginPage() {
 
             {/* Left Panel - Premium Branding */}
             <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-                {/* Background Image with Overlay */}
                 <div className="absolute inset-0">
                     <img
-                        src="/heroimage1.png"
+                        src="/heroimage2.png"
                         alt="Fuel Station"
                         className="w-full h-full object-cover"
                     />
@@ -60,7 +80,6 @@ export default function LoginPage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-[#3B0764] via-transparent to-transparent" />
                 </div>
 
-                {/* Content */}
                 <div className="relative z-10 p-12 flex flex-col justify-between text-white w-full">
                     <div>
                         <Link href="/" className="flex items-center gap-3 group">
@@ -78,35 +97,14 @@ export default function LoginPage() {
                             transition={{ delay: 0.2 }}
                         >
                             <div className="inline-block border border-white/30 px-4 py-1.5 rounded-full text-xs font-bold tracking-[0.2em] uppercase backdrop-blur-md mb-6">
-                                Precision Navigation
+                                Join The Community
                             </div>
                             <h1 className="font-serif text-5xl xl:text-6xl leading-[1.1] tracking-tight mb-6">
-                                The Road<br />Less Taken.
+                                Start Your<br />Journey Today.
                             </h1>
                             <p className="text-xl text-white/70 leading-relaxed max-w-md">
-                                Experience the clarity of uncompromised fuel data. No noise. Just the journey.
+                                Join thousands of drivers who save time and money with real-time fuel prices and station availability.
                             </p>
-                        </motion.div>
-
-                        {/* Stats */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.4 }}
-                            className="flex gap-8 pt-8 border-t border-white/20"
-                        >
-                            <div>
-                                <p className="text-3xl font-bold font-serif">2,500+</p>
-                                <p className="text-sm text-white/60">Stations</p>
-                            </div>
-                            <div>
-                                <p className="text-3xl font-bold font-serif">36</p>
-                                <p className="text-sm text-white/60">States</p>
-                            </div>
-                            <div>
-                                <p className="text-3xl font-bold font-serif">99.9%</p>
-                                <p className="text-sm text-white/60">Uptime</p>
-                            </div>
                         </motion.div>
                     </div>
 
@@ -117,7 +115,7 @@ export default function LoginPage() {
             </div>
 
             {/* Right Panel - Form */}
-            <div className="flex-1 flex items-center justify-center p-6 lg:p-12 relative">
+            <div className="flex-1 flex items-center justify-center p-6 lg:p-12 relative overflow-y-auto">
 
                 {/* Back Button */}
                 <Link
@@ -133,7 +131,7 @@ export default function LoginPage() {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="w-full max-w-md"
+                    className="w-full max-w-md py-16"
                 >
                     {/* Mobile Logo */}
                     <div className="lg:hidden flex items-center gap-3 mb-10">
@@ -144,28 +142,34 @@ export default function LoginPage() {
                     </div>
 
                     {/* Header */}
-                    <div className="mb-10">
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={isLogin ? 'login' : 'signup'}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 10 }}
-                                transition={{ duration: 0.2 }}
-                            >
-                                <h2 className="font-serif text-4xl lg:text-5xl font-bold mb-3 text-[#1A1A1A]">
-                                    {isLogin ? 'Welcome back' : 'Join us'}
-                                </h2>
-                                <p className="text-[#1A1A1A]/60 text-lg">
-                                    {isLogin ? 'Sign in to continue your journey' : 'Create an account to get started'}
-                                </p>
-                            </motion.div>
-                        </AnimatePresence>
+                    <div className="mb-8">
+                        <h2 className="font-serif text-4xl lg:text-5xl font-bold mb-3 text-[#1A1A1A]">
+                            Sign up
+                        </h2>
+                        <p className="text-[#1A1A1A]/60 text-lg">
+                            Create an account to get started
+                        </p>
                     </div>
 
                     {/* Form */}
-                    <form onSubmit={handleAuth} className="space-y-5">
-                        {/* Email Field */}
+                    <form onSubmit={handleSignUp} className="space-y-4">
+                        {/* Full Name */}
+                        <div>
+                            <label className="block text-sm font-medium text-[#1A1A1A]/70 mb-2">Full Name</label>
+                            <div className="relative group">
+                                <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#1A1A1A]/30 group-focus-within:text-[#3B0764] transition-colors" />
+                                <input
+                                    type="text"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                    placeholder="Enter your full name"
+                                    required
+                                    className="w-full h-14 pl-12 pr-4 rounded-2xl bg-white border-2 border-[#1A1A1A]/10 text-[#1A1A1A] placeholder:text-[#1A1A1A]/30 focus:outline-none focus:border-[#3B0764] focus:ring-4 focus:ring-[#3B0764]/10 transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Email */}
                         <div>
                             <label className="block text-sm font-medium text-[#1A1A1A]/70 mb-2">Email address</label>
                             <div className="relative group">
@@ -181,7 +185,23 @@ export default function LoginPage() {
                             </div>
                         </div>
 
-                        {/* Password Field */}
+                        {/* Phone */}
+                        <div>
+                            <label className="block text-sm font-medium text-[#1A1A1A]/70 mb-2">Phone Number</label>
+                            <div className="relative group">
+                                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#1A1A1A]/30 group-focus-within:text-[#3B0764] transition-colors" />
+                                <input
+                                    type="tel"
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                    placeholder="+234 xxx xxx xxxx"
+                                    required
+                                    className="w-full h-14 pl-12 pr-4 rounded-2xl bg-white border-2 border-[#1A1A1A]/10 text-[#1A1A1A] placeholder:text-[#1A1A1A]/30 focus:outline-none focus:border-[#3B0764] focus:ring-4 focus:ring-[#3B0764]/10 transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Password */}
                         <div>
                             <label className="block text-sm font-medium text-[#1A1A1A]/70 mb-2">Password</label>
                             <div className="relative group">
@@ -203,16 +223,25 @@ export default function LoginPage() {
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
+                            <p className="text-xs text-[#1A1A1A]/50 mt-1">Password must be at least 6 characters long.</p>
                         </div>
 
-                        {/* Forgot Password */}
-                        {isLogin && (
-                            <div className="text-right">
-                                <Link href="/forgot-password" className="text-sm text-[#3B0764] font-medium hover:underline">
-                                    Forgot password?
-                                </Link>
+                        {/* Confirm Password */}
+                        <div>
+                            <label className="block text-sm font-medium text-[#1A1A1A]/70 mb-2">Confirm Password</label>
+                            <div className="relative group">
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#1A1A1A]/30 group-focus-within:text-[#3B0764] transition-colors" />
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="Confirm your password"
+                                    required
+                                    minLength={6}
+                                    className="w-full h-14 pl-12 pr-4 rounded-2xl bg-white border-2 border-[#1A1A1A]/10 text-[#1A1A1A] placeholder:text-[#1A1A1A]/30 focus:outline-none focus:border-[#3B0764] focus:ring-4 focus:ring-[#3B0764]/10 transition-all"
+                                />
                             </div>
-                        )}
+                        </div>
 
                         {/* Error/Success Message */}
                         <AnimatePresence>
@@ -221,7 +250,7 @@ export default function LoginPage() {
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -10 }}
-                                    className={`p-4 rounded-2xl text-sm font-medium ${error.includes('Check your email')
+                                    className={`p-4 rounded-2xl text-sm font-medium ${error.includes('Success')
                                         ? 'bg-green-50 text-green-700 border border-green-200'
                                         : 'bg-red-50 text-red-700 border border-red-200'}`}
                                 >
@@ -242,39 +271,24 @@ export default function LoginPage() {
                                 <Loader2 className="w-5 h-5 animate-spin" />
                             ) : (
                                 <>
-                                    {isLogin ? 'Sign In' : 'Create Account'}
+                                    Sign Up
                                     <ArrowRight className="w-5 h-5" />
                                 </>
                             )}
                         </motion.button>
                     </form>
 
-                    {/* Divider */}
-                    <div className="flex items-center gap-4 my-8">
-                        <div className="flex-1 h-px bg-[#1A1A1A]/10" />
-                        <span className="text-sm text-[#1A1A1A]/40">or</span>
-                        <div className="flex-1 h-px bg-[#1A1A1A]/10" />
-                    </div>
-
-                    {/* Toggle Auth Mode */}
-                    <div className="text-center">
-                        <button
-                            onClick={() => {
-                                setIsLogin(!isLogin);
-                                setError('');
-                            }}
-                            className="text-[#1A1A1A]/60 hover:text-[#1A1A1A] transition-colors"
-                        >
-                            {isLogin ? "Don't have an account? " : 'Already have an account? '}
-                            <span className="text-[#3B0764] font-bold hover:underline">
-                                {isLogin ? 'Sign up' : 'Sign in'}
-                            </span>
-                        </button>
+                    {/* Toggle to Login */}
+                    <div className="text-center mt-8">
+                        <Link href="/login" className="text-[#1A1A1A]/60 hover:text-[#1A1A1A] transition-colors">
+                            Already have an account?{' '}
+                            <span className="text-[#3B0764] font-bold hover:underline">Sign in</span>
+                        </Link>
                     </div>
 
                     {/* Terms */}
-                    <p className="text-xs text-[#1A1A1A]/40 text-center mt-8">
-                        By continuing, you agree to our{' '}
+                    <p className="text-xs text-[#1A1A1A]/40 text-center mt-6">
+                        By signing up, you agree to our{' '}
                         <Link href="/terms" className="underline hover:text-[#3B0764]">Terms of Service</Link>
                         {' '}and{' '}
                         <Link href="/privacy" className="underline hover:text-[#3B0764]">Privacy Policy</Link>

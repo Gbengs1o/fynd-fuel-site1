@@ -1,11 +1,15 @@
 
 'use client';
 
-import { useLoadScript, GoogleMap, MarkerF, InfoWindowF } from '@react-google-maps/api';
-import { useMemo, useCallback } from 'react';
+import { useLoadScript, GoogleMap, MarkerF, InfoWindowF, Autocomplete } from '@react-google-maps/api';
+import { useMemo, useCallback, useState } from 'react';
 import Link from 'next/link';
 
 const libraries: ("places" | "geometry" | "drawing" | "visualization")[] = ["places"];
+
+export interface MapCallbacks {
+    onPlaceSelected?: (location: { lat: number, lng: number }, placeName: string) => void;
+}
 
 // Custom Fynd Fuel Logo Marker Component - Circular
 const mapIcon = {
@@ -20,19 +24,47 @@ const mapIcon = {
     `)}`
 };
 
-export default function MapBackground({ stations, userLocation, selectedStation, onStationClick, onClosePopup }: {
+export default function MapBackground({
+    stations,
+    userLocation,
+    selectedStation,
+    onStationClick,
+    onClosePopup,
+    onPlaceSelected,
+    searchInputRef
+}: {
     stations: any[],
     userLocation?: { lat: number, lng: number },
     selectedStation?: any,
     onStationClick?: (station: any) => void,
-    onClosePopup?: () => void
+    onClosePopup?: () => void,
+    onPlaceSelected?: (location: { lat: number, lng: number }, placeName: string) => void,
+    searchInputRef?: React.RefObject<HTMLInputElement>
 }) {
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || '',
         libraries,
     });
 
+    const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+
     const center = useMemo(() => userLocation || { lat: 6.5244, lng: 3.3792 }, [userLocation]); // Default: Lagos
+
+    const onLoad = useCallback((autocompleteInstance: google.maps.places.Autocomplete) => {
+        setAutocomplete(autocompleteInstance);
+    }, []);
+
+    const onPlaceChanged = useCallback(() => {
+        if (autocomplete !== null) {
+            const place = autocomplete.getPlace();
+            if (place.geometry?.location) {
+                const lat = place.geometry.location.lat();
+                const lng = place.geometry.location.lng();
+                const placeName = place.name || place.formatted_address || 'Selected Location';
+                onPlaceSelected?.({ lat, lng }, placeName);
+            }
+        }
+    }, [autocomplete, onPlaceSelected]);
 
     // Custom Dark Mode Map Style - More premium feel
     const mapOptions = useMemo(() => ({
@@ -137,80 +169,110 @@ export default function MapBackground({ stations, userLocation, selectedStation,
     );
 
     return (
-        <GoogleMap
-            zoom={14}
-            center={center}
-            mapContainerClassName="w-full h-full absolute top-0 left-0 z-0"
-            options={mapOptions}
-        >
-            {/* Custom Logo Markers */}
-            {stations.map((station) => (
-                <MarkerF
-                    key={station.id}
-                    position={{
-                        lat: station.lat || 6.5244,
-                        lng: station.lng || 3.3792
-                    }}
-                    onClick={() => onStationClick?.(station)}
-                    icon={{
-                        url: mapIcon.url,
-                        scaledSize: typeof window !== 'undefined' && window.google ? new window.google.maps.Size(40, 40) : undefined,
-                        anchor: typeof window !== 'undefined' && window.google ? new window.google.maps.Point(20, 20) : undefined,
-                    }}
-                />
-            ))}
-
-            {/* InfoWindow Popup */}
-            {selectedStation && isActiveStationVisible(selectedStation, stations) && (
-                <InfoWindowF
-                    position={{
-                        lat: selectedStation.lat,
-                        lng: selectedStation.lng
-                    }}
-                    onCloseClick={onClosePopup}
+        <>
+            {/* Autocomplete for Search Input */}
+            {searchInputRef?.current && (
+                <Autocomplete
+                    onLoad={onLoad}
+                    onPlaceChanged={onPlaceChanged}
                     options={{
-                        pixelOffset: typeof window !== 'undefined' && window.google ? new window.google.maps.Size(0, -40) : undefined,
-                        disableAutoPan: false,
+                        bounds: userLocation ? {
+                            north: userLocation.lat + 0.5,
+                            south: userLocation.lat - 0.5,
+                            east: userLocation.lng + 0.5,
+                            west: userLocation.lng - 0.5,
+                        } : undefined,
+                        componentRestrictions: { country: 'ng' },
+                        fields: ['geometry', 'name', 'formatted_address'],
                     }}
                 >
-                    <div className="bg-white p-2 rounded-lg min-w-[200px] max-w-[280px]">
-                        <h3 className="font-bold text-[#3B0764] text-lg mb-1">{selectedStation.name}</h3>
-                        <p className="text-sm text-gray-600 mb-2 truncate">{selectedStation.address}</p>
-                        <div className="flex items-center gap-2 mb-3">
-                            <span className="font-bold text-lg">₦{selectedStation.price}</span>
-                            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{selectedStation.status}</span>
-                        </div>
-                        <div className="flex gap-2">
-                            <Link
-                                href={`/station/${selectedStation.id}`}
-                                className="flex-1 bg-[#3B0764] text-white text-center py-2 rounded-lg text-sm font-medium hover:bg-[#4C0D8C] transition-colors"
-                            >
-                                View Profile
-                            </Link>
-                        </div>
-                    </div>
-                </InfoWindowF>
+                    <input ref={searchInputRef} style={{ display: 'none' }} />
+                </Autocomplete>
             )}
 
-            {/* User Location Marker */}
-            {userLocation && (
-                <MarkerF
-                    position={userLocation}
-                    icon={{
-                        path: typeof google !== 'undefined' ? google.maps.SymbolPath.CIRCLE : 0,
-                        fillColor: "#3B0764",
-                        fillOpacity: 1,
-                        strokeWeight: 3,
-                        strokeColor: "#FFFFFF",
-                        scale: 8,
-                    }}
-                />
-            )}
-        </GoogleMap>
+            <GoogleMap
+                zoom={14}
+                center={center}
+                mapContainerClassName="w-full h-full absolute top-0 left-0 z-0"
+                options={mapOptions}
+            >
+                {/* Custom Logo Markers */}
+                {stations.map((station) => (
+                    <MarkerF
+                        key={station.id}
+                        position={{
+                            lat: station.lat || 6.5244,
+                            lng: station.lng || 3.3792
+                        }}
+                        onClick={() => onStationClick?.(station)}
+                        icon={{
+                            url: mapIcon.url,
+                            scaledSize: typeof window !== 'undefined' && window.google ? new window.google.maps.Size(40, 40) : undefined,
+                            anchor: typeof window !== 'undefined' && window.google ? new window.google.maps.Point(20, 20) : undefined,
+                        }}
+                    />
+                ))}
+
+                {/* InfoWindow Popup */}
+                {selectedStation && (
+                    <InfoWindowF
+                        position={{
+                            lat: selectedStation.lat,
+                            lng: selectedStation.lng
+                        }}
+                        onCloseClick={onClosePopup}
+                        options={{
+                            pixelOffset: typeof window !== 'undefined' && window.google ? new window.google.maps.Size(0, -40) : undefined,
+                            disableAutoPan: false,
+                        }}
+                    >
+                        <div className="bg-white p-3 sm:p-4 rounded-lg min-w-[180px] max-w-[240px] sm:max-w-[280px]">
+                            <h3 className="font-bold text-[#3B0764] text-base sm:text-lg mb-1 truncate">{selectedStation.name}</h3>
+                            <p className="text-xs sm:text-sm text-gray-600 mb-2 truncate">{selectedStation.address}</p>
+                            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                                <div className="flex items-center text-xs sm:text-sm">
+                                    <span className="text-gray-500 mr-1">⭐</span>
+                                    <span className="font-semibold">{selectedStation.rating || 'N/A'}</span>
+                                </div>
+                                <span className="text-gray-300">•</span>
+                                <div className="flex items-center text-xs sm:text-sm">
+                                    <span className="text-gray-500 mr-1">📍</span>
+                                    <span className="font-semibold">{selectedStation.distance}</span>
+                                </div>
+                            </div>
+                            {selectedStation.price && (
+                                <div className="mb-2 sm:mb-3">
+                                    <span className="text-xs text-gray-500">PMS Price:</span>
+                                    <p className="text-lg sm:text-xl font-bold text-[#3B0764]">₦{selectedStation.price}</p>
+                                </div>
+                            )}
+                            <div className="flex gap-2">
+                                <Link
+                                    href={`/station/${selectedStation.id}`}
+                                    className="flex-1 bg-[#3B0764] text-white text-center py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium hover:bg-[#4C0D8C] transition-colors touch-manipulation"
+                                >
+                                    View Profile
+                                </Link>
+                            </div>
+                        </div>
+                    </InfoWindowF>
+                )}
+
+                {/* User Location Marker */}
+                {userLocation && (
+                    <MarkerF
+                        position={userLocation}
+                        icon={{
+                            path: typeof google !== 'undefined' ? google.maps.SymbolPath.CIRCLE : 0,
+                            fillColor: "#3B0764",
+                            fillOpacity: 1,
+                            strokeWeight: 3,
+                            strokeColor: "#FFFFFF",
+                            scale: 8,
+                        }}
+                    />
+                )}
+            </GoogleMap>
+        </>
     );
-}
-
-// Helper to check if selected station is still in the list (valid)
-function isActiveStationVisible(active: any, list: any[]) {
-    return list.some(s => s.id === active.id);
 }

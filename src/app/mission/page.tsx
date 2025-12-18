@@ -37,10 +37,7 @@ export default function MissionPage() {
                         </div>
                         <span className="font-serif font-bold text-2xl tracking-tighter text-[#1A1A1A]">Fynd Fuel</span>
                     </div>
-                    <Link
-                        href="/login"
-                        className="px-6 py-2 bg-[#1A1A1A] text-white rounded-full font-bold hover:bg-[#3B0764] transition-colors"
-                    >
+                    <Link href="/download" className="px-6 py-2 bg-[#3B0764] text-white rounded-full font-bold hover:bg-[#4C0D8C] transition-colors">
                         Get App
                     </Link>
                 </div>
@@ -141,7 +138,7 @@ export default function MissionPage() {
 
             {/* Footer */}
             <footer className="py-10 border-t border-[#3B0764]/5 text-center">
-                <p className="text-[#1A1A1A]/40 text-sm font-serif">© 2024 Fynd Fuel. Crafted with patience.</p>
+                <p className="text-[#1A1A1A]/40 text-sm font-serif">© 2025 Fynd Fuel. Crafted with patience.</p>
             </footer>
 
         </div>

@@ -13,8 +13,10 @@ export const LetterAvatar: React.FC<LetterAvatarProps> = ({
     size = 40,
     className = ''
 }) => {
-    const initials = name
-        ? name
+    const safeName = name || 'User';
+
+    const initials = safeName
+        ? safeName
             .split(' ')
             .map(n => n[0])
             .join('')
@@ -44,8 +46,8 @@ export const LetterAvatar: React.FC<LetterAvatarProps> = ({
     ];
 
     let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    for (let i = 0; i < safeName.length; i++) {
+        hash = safeName.charCodeAt(i) + ((hash << 5) - hash);
     }
     const colorIndex = Math.abs(hash) % colors.length;
     const [bg, text] = colors[colorIndex];
