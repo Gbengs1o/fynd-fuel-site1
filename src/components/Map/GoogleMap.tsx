@@ -39,7 +39,7 @@ export default function MapBackground({
     onStationClick?: (station: any) => void,
     onClosePopup?: () => void,
     onPlaceSelected?: (location: { lat: number, lng: number }, placeName: string) => void,
-    searchInputRef?: React.RefObject<HTMLInputElement>
+    searchInputRef?: React.RefObject<HTMLInputElement | null>
 }) {
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || '',
