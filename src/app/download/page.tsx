@@ -87,6 +87,7 @@ export default function DownloadPage() {
                             <div className="flex flex-col sm:flex-row gap-4">
                                 <a
                                     href="#"
+                                    onClick={(e) => { e.preventDefault(); alert('Coming to the apple store soon'); }}
                                     className="group flex items-center gap-4 bg-[#1A1A1A] text-white px-6 py-4 rounded-2xl hover:bg-[#3B0764] transition-all hover:scale-105"
                                 >
                                     <svg className="w-8 h-8" viewBox="0 0 24 24" fill="currentColor">
@@ -259,6 +260,7 @@ export default function DownloadPage() {
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <a
                                 href="#"
+                                onClick={(e) => { e.preventDefault(); alert('Coming to the apple store soon'); }}
                                 className="group flex items-center justify-center gap-4 bg-white text-[#3B0764] px-8 py-4 rounded-2xl hover:bg-[#F5F5F0] transition-all hover:scale-105 font-bold"
                             >
                                 <svg className="w-7 h-7" viewBox="0 0 24 24" fill="currentColor">
