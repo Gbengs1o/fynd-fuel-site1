@@ -63,22 +63,18 @@ export default function Home() {
       {/* --- NAVBAR --- */}
       <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-6 transition-all duration-300">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3 mix-blend-difference text-white">
-            {/* Logo Icon */}
-            <div className="w-10 h-10 border-[1.5px] border-white rounded-full flex items-center justify-center">
-              <Fuel size={18} />
-            </div>
+          <div className="flex items-center gap-3 text-white">
             <span className="font-serif font-bold text-2xl tracking-tighter">Fynd Fuel</span>
           </div>
 
-          <div className="hidden md:flex items-center gap-8 mix-blend-difference text-white font-medium text-sm tracking-wide">
+          <div className="hidden md:flex items-center gap-8 text-white font-medium text-sm tracking-wide">
             <Link href="/mission" className="hover:underline underline-offset-4 decoration-1">Mission</Link>
             <Link href="/login" className="hover:underline underline-offset-4 decoration-1">Map</Link>
             <Link href="/download" className="px-6 py-2 bg-white text-black rounded-full font-bold hover:bg-[#F5F5F0] transition-colors">
               Get App
             </Link>
           </div>
-          <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden text-white mix-blend-difference z-50">
+          <button onClick={() => setIsMobileMenuOpen(true)} className="md:hidden text-white z-50">
             <Menu />
           </button>
         </div>
@@ -94,9 +90,6 @@ export default function Home() {
           >
             <div className="flex justify-between items-center mb-10">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 border-[1.5px] border-white rounded-full flex items-center justify-center">
-                  <Fuel size={18} />
-                </div>
                 <span className="font-serif font-bold text-2xl tracking-tighter">Fynd Fuel</span>
               </div>
               <button onClick={() => setIsMobileMenuOpen(false)}>
@@ -136,7 +129,7 @@ export default function Home() {
                     key={currentImageIndex}
                     src={heroImages[currentImageIndex]}
                     alt="Hero Carousel"
-                    className="absolute inset-0 w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover object-[center_20%]"
                     initial={{ x: "100%" }}
                     animate={{ x: 0 }}
                     exit={{ x: "-100%" }}

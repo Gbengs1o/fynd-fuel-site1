@@ -3,7 +3,7 @@
 
 import { useLoadScript, GoogleMap, MarkerF, InfoWindowF, Autocomplete } from '@react-google-maps/api';
 import { useMemo, useCallback, useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const libraries: ("places" | "geometry" | "drawing" | "visualization")[] = ["places"];
 
@@ -12,17 +12,19 @@ export interface MapCallbacks {
 }
 
 // Custom Fynd Fuel Logo Marker Component - Circular
-const mapIcon = {
+// Custom Fynd Fuel Logo Marker Component - Circular
+const getMapIcon = (isBoosted: boolean) => ({
     url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="40px" height="40px" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="48" fill="white" stroke="#3B0764" stroke-width="4" />
+    <svg xmlns="http://www.w3.org/2000/svg" width="46px" height="46px" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="46" fill="white" stroke="${isBoosted ? '#FFD700' : '#3B0764'}" stroke-width="${isBoosted ? '6' : '4'}" />
+        ${isBoosted ? '<circle cx="50" cy="50" r="40" fill="#FFD700" opacity="0.1" />' : ''}
         <g transform="translate(20, 20) scale(0.6)">
-            <path fill="#3B0764" d="M2080.09 1779.17l-399.8 431.48c-250.48,-267.45 -647.12,-598.63 -611.66,-987.72 42.49,-229.11 165.69,-378.48 337.95,-458.04 561.87,-259.46 1219.06,330.74 673.5,1014.27zm-656.23 -1219.88c-245.02,77.89 -424.48,252.2 -507.11,478.69 -48.21,140.04 -56.07,235.01 -35.54,392.65 40.4,237.64 194,415.22 323.13,523.46l-257.78 276.33c34.95,76.41 652.87,766.45 733.73,853.57l219.09 -242.71c32.92,-39.63 30.13,-36.82 72.2,-80.94l279.66 -334.14c202.17,-246.37 407.12,-386.76 467.12,-755.49 109.61,-704.46 -616.95,-1326.82 -1294.51,-1111.43zm-223.41 1667.67l136.93 -116.6 342.91 383.01c32.5,-18.62 6.75,0.2 32.47,-24.41 312.09,-347.83 743.69,-685.12 782.67,-1177.8 258.26,442.89 -432.16,1075.64 -696.59,1381.85 -56.88,62.01 -61.41,56.62 -97.19,125.29l-501.21 -571.34z" transform="scale(0.015)"/>
-            <path fill="#3B0764" d="M1449.09 1008.46c-18.41,3.83 -30.31,13.3 -37.68,26.18 -9.49,16.58 -8.05,34.82 -8.04,56.5l0 516.83c0,67.18 -5.06,71.46 58.22,71.45 86.84,-0 173.68,0 260.52,0 80.83,0 73.56,12.57 73.56,-119.77 0,-21.31 -6.59,-46.76 16.7,-48.37 58.39,-4.06 29.61,47.51 44.69,85.65 27.67,70 122.86,72.35 154.58,6.44 12.65,-26.28 8.21,-87.5 8.21,-121.46 0,-86.83 -0.12,-173.68 0,-260.52 0.07,-50.76 -9.26,-66.76 -38.52,-89.04 -24.37,-18.56 -49.78,-37.3 -74.46,-55.8 -11.8,-8.84 -26.63,-21.22 -44.9,-7.36 -14.64,11.11 -12.3,34.4 1.22,44.74 48.54,37.14 44.42,21.59 44.41,86.44 0,49.08 1.87,69.32 42.41,85.22 18.8,7.37 13.7,19.38 13.7,51.34l0 195.39c0,21.44 3.96,43.51 -9.41,55.7 -14.79,13.5 -36.91,6.43 -43.33,-7.14 -14.73,-31.11 12.65,-58.7 -27.84,-100.32 -44.1,-45.33 -85.7,-6.33 -87.52,-42.65 -2.06,-41.12 0.06,-88.56 0.06,-130.39 0,-36.4 2.59,-238.31 -1.56,-257.02 -10.62,-47.85 -57.65,-43.44 -86.7,-43.44 -36.99,0 -239.44,-2.54 -258.31,1.38zm10.42 74.27l0 184.88c0,15.96 5.06,19.51 20.99,19.51l239.51 0c15.48,0 19.51,-4.03 19.51,-19.51l0 -184.88c0,-15.5 -4.01,-19.51 -19.51,-19.51l-240.04 0c-14.87,0 -20.46,4.2 -20.46,19.51z" transform="scale(0.015)"/>
+            <path fill="${isBoosted ? '#B8860B' : '#3B0764'}" d="M2080.09 1779.17l-399.8 431.48c-250.48,-267.45 -647.12,-598.63 -611.66,-987.72 42.49,-229.11 165.69,-378.48 337.95,-458.04 561.87,-259.46 1219.06,330.74 673.5,1014.27zm-656.23 -1219.88c-245.02,77.89 -424.48,252.2 -507.11,478.69 -48.21,140.04 -56.07,235.01 -35.54,392.65 40.4,237.64 194,415.22 323.13,523.46l-257.78 276.33c34.95,76.41 652.87,766.45 733.73,853.57l219.09 -242.71c32.92,-39.63 30.13,-36.82 72.2,-80.94l279.66 -334.14c202.17,-246.37 407.12,-386.76 467.12,-755.49 109.61,-704.46 -616.95,-1326.82 -1294.51,-1111.43zm-223.41 1667.67l136.93 -116.6 342.91 383.01c32.5,-18.62 6.75,0.2 32.47,-24.41 312.09,-347.83 743.69,-685.12 782.67,-1177.8 258.26,442.89 -432.16,1075.64 -696.59,1381.85 -56.88,62.01 -61.41,56.62 -97.19,125.29l-501.21 -571.34z" transform="scale(0.015)"/>
+            <path fill="${isBoosted ? '#B8860B' : '#3B0764'}" d="M1449.09 1008.46c-18.41,3.83 -30.31,13.3 -37.68,26.18 -9.49,16.58 -8.05,34.82 -8.04,56.5l0 516.83c0,67.18 -5.06,71.46 58.22,71.45 86.84,-0 173.68,0 260.52,0 80.83,0 73.56,12.57 73.56,-119.77 0,-21.31 -6.59,-46.76 16.7,-48.37 58.39,-4.06 29.61,47.51 44.69,85.65 27.67,70 122.86,72.35 154.58,6.44 12.65,-26.28 8.21,-87.5 8.21,-121.46 0,-86.83 -0.12,-173.68 0,-260.52 0.07,-50.76 -9.26,-66.76 -38.52,-89.04 -24.37,-18.56 -49.78,-37.3 -74.46,-55.8 -11.8,-8.84 -26.63,-21.22 -44.9,-7.36 -14.64,11.11 -12.3,34.4 1.22,44.74 48.54,37.14 44.42,21.59 44.41,86.44 0,49.08 1.87,69.32 42.41,85.22 18.8,7.37 13.7,19.38 13.7,51.34l0 195.39c0,21.44 3.96,43.51 -9.41,55.7 -14.79,13.5 -36.91,6.43 -43.33,-7.14 -14.73,-31.11 12.65,-58.7 -27.84,-100.32 -44.1,-45.33 -85.7,-6.33 -87.52,-42.65 -2.06,-41.12 0.06,-88.56 0.06,-130.39 0,-36.4 2.59,-238.31 -1.56,-257.02 -10.62,-47.85 -57.65,-43.44 -86.7,-43.44 -36.99,0 -239.44,-2.54 -258.31,1.38zm10.42 74.27l0 184.88c0,15.96 5.06,19.51 20.99,19.51l239.51 0c15.48,0 19.51,-4.03 19.51,-19.51l0 -184.88c0,-15.5 -4.01,-19.51 -19.51,-19.51l-240.04 0c-14.87,0 -20.46,4.2 -20.46,19.51z" transform="scale(0.015)"/>
         </g>
     </svg>
     `)}`
-};
+});
 
 export default function MapBackground({
     stations,
@@ -41,6 +43,7 @@ export default function MapBackground({
     onPlaceSelected?: (location: { lat: number, lng: number }, placeName: string) => void,
     searchInputRef?: React.RefObject<HTMLInputElement | null>
 }) {
+    const router = useRouter();
     const { isLoaded, loadError } = useLoadScript({
         googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY || '',
         libraries,
@@ -206,9 +209,9 @@ export default function MapBackground({
                         }}
                         onClick={() => onStationClick?.(station)}
                         icon={{
-                            url: mapIcon.url,
-                            scaledSize: typeof window !== 'undefined' && window.google ? new window.google.maps.Size(40, 40) : undefined,
-                            anchor: typeof window !== 'undefined' && window.google ? new window.google.maps.Point(20, 20) : undefined,
+                            url: getMapIcon(station.is_boosted).url,
+                            scaledSize: typeof window !== 'undefined' && window.google ? new window.google.maps.Size(station.is_boosted ? 44 : 40, station.is_boosted ? 44 : 40) : undefined,
+                            anchor: typeof window !== 'undefined' && window.google ? new window.google.maps.Point(station.is_boosted ? 22 : 20, station.is_boosted ? 22 : 20) : undefined,
                         }}
                     />
                 ))}
@@ -222,37 +225,53 @@ export default function MapBackground({
                         }}
                         onCloseClick={onClosePopup}
                         options={{
-                            pixelOffset: typeof window !== 'undefined' && window.google ? new window.google.maps.Size(0, -40) : undefined,
+                            pixelOffset: typeof window !== 'undefined' && window.google ? new window.google.maps.Size(0, -42) : undefined,
                             disableAutoPan: false,
                         }}
                     >
-                        <div className="bg-white p-3 sm:p-4 rounded-lg min-w-[180px] max-w-[240px] sm:max-w-[280px]">
-                            <h3 className="font-bold text-[#3B0764] text-base sm:text-lg mb-1 truncate">{selectedStation.name}</h3>
-                            <p className="text-xs sm:text-sm text-gray-600 mb-2 truncate">{selectedStation.address}</p>
-                            <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                                <div className="flex items-center text-xs sm:text-sm">
-                                    <span className="text-gray-500 mr-1">⭐</span>
-                                    <span className="font-semibold">{selectedStation.rating || 'N/A'}</span>
+                        <div className="bg-white dark:bg-[#1A1A1A] p-0 rounded-2xl overflow-hidden min-w-[240px] shadow-2xl border border-[#3B0764]/10">
+                            <div className={`p-4 ${selectedStation.is_boosted ? 'bg-[#FFD700]/10 border-b border-[#FFD700]/20' : 'bg-[#3B0764]/5 border-b border-[#3B0764]/10'}`}>
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                    <h3 className="font-black text-[#1A1A1A] dark:text-[#3B0764] text-lg leading-tight truncate">
+                                        {selectedStation.name}
+                                    </h3>
+                                    {selectedStation.is_boosted && (
+                                        <span className="shrink-0 bg-[#FFD700] text-[#000] text-[9px] font-black px-1.5 py-0.5 rounded-md">
+                                            FEATURED
+                                        </span>
+                                    )}
                                 </div>
-                                <span className="text-gray-300">•</span>
-                                <div className="flex items-center text-xs sm:text-sm">
-                                    <span className="text-gray-500 mr-1">📍</span>
-                                    <span className="font-semibold">{selectedStation.distance}</span>
-                                </div>
+                                <p className="text-[11px] text-[#1A1A1A]/50 dark:text-[#3B0764]/60 truncate font-medium uppercase tracking-wider">
+                                    {selectedStation.brand || (selectedStation.is_boosted ? 'Gold Partner' : 'Fuel Station')}
+                                </p>
                             </div>
-                            {selectedStation.price && (
-                                <div className="mb-2 sm:mb-3">
-                                    <span className="text-xs text-gray-500">PMS Price:</span>
-                                    <p className="text-lg sm:text-xl font-bold text-[#3B0764]">₦{selectedStation.price}</p>
+                            
+                            <div className="p-4">
+                                <div className="flex items-baseline gap-1 mb-4">
+                                    <span className="text-sm font-bold text-[#3B0764] underline decoration-[#3B0764]/30">₦</span>
+                                    <span className="text-3xl font-black text-[#1A1A1A] tracking-tighter">
+                                        {selectedStation.price ? Math.floor(selectedStation.price) : '---'}
+                                    </span>
+                                    <span className="text-[10px] text-[#1A1A1A]/40 font-bold ml-1 uppercase">PMS</span>
                                 </div>
-                            )}
-                            <div className="flex gap-2">
-                                <Link
-                                    href={`/station/${selectedStation.id}`}
-                                    className="flex-1 bg-[#3B0764] text-white text-center py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-medium hover:bg-[#4C0D8C] transition-colors touch-manipulation"
+
+                                <div className="grid grid-cols-2 gap-2 mb-4">
+                                    <div className="bg-[#F5F5F0] p-2 rounded-xl">
+                                        <p className="text-[9px] text-[#1A1A1A]/40 font-bold uppercase mb-0.5">Distance</p>
+                                        <p className="text-xs font-black text-[#3B0764]">{selectedStation.distance || '0.0 km'}</p>
+                                    </div>
+                                    <div className="bg-[#F5F5F0] p-2 rounded-xl">
+                                        <p className="text-[9px] text-[#1A1A1A]/40 font-bold uppercase mb-0.5">Rating</p>
+                                        <p className="text-xs font-black text-amber-600">⭐ {selectedStation.rating || '0.0'}</p>
+                                    </div>
+                                </div>
+
+                                <button
+                                    onClick={() => router.push(`/station/${selectedStation.id}`)}
+                                    className="block w-full bg-[#3B0764] text-white text-center py-3 rounded-xl text-sm font-black hover:bg-[#4C0D8C] transition-all active:scale-[0.98] shadow-lg shadow-[#3B0764]/20"
                                 >
-                                    View Profile
-                                </Link>
+                                    OPEN STATION
+                                </button>
                             </div>
                         </div>
                     </InfoWindowF>

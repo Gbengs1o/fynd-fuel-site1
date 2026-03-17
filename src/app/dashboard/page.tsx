@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/ThemeToggle';
 import MapBackground from '@/components/Map/GoogleMap';
-import { MapPin, Navigation, Search, Menu, X, Home, Heart, User, LogOut, Fuel, ChevronRight, Scan, Plus, Bookmark, Eye, Locate, Compass, Bell } from 'lucide-react';
+import { MapPin, Navigation, Search, Menu, X, Home, Heart, User, LogOut, Fuel, ChevronRight, Scan, Plus, Bookmark, Eye, Locate, Compass, Bell, Settings, Gauge, Trophy, Star, ShieldCheck, CheckCircle, TrendingUp, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { LetterAvatar } from '@/components/LetterAvatar';
@@ -23,6 +23,15 @@ interface Station {
     lng: number;
     brand?: string;
     fuel_type?: string;
+    last_updated_at?: string;
+    is_boosted?: boolean;
+    promotion_id?: string;
+    tier_name?: string;
+    reporter_name?: string;
+    price_type?: 'reported' | 'station' | 'official';
+    rating?: number;
+    is_out_of_stock?: boolean;
+    no_fuel_reports?: number;
 }
 
 interface GeoJSONFeature {
@@ -38,6 +47,15 @@ interface GeoJSONFeature {
         brand?: string;
         price?: number;
         fuel_type?: string;
+        last_updated_at?: string;
+        is_boosted?: boolean;
+        promotion_id?: string;
+        tier_name?: string;
+        reporter_name?: string;
+        price_type?: 'reported' | 'station' | 'official';
+        rating?: number;
+        is_out_of_stock?: boolean;
+        no_fuel_reports?: number;
     };
 }
 
@@ -97,12 +115,20 @@ export default function Dashboard() {
                         name: feature.properties.name,
                         address: feature.properties.address || 'Address not available',
                         price: feature.properties.price || 0,
-                        status: 'Available', // Default status since not in GeoJSON
+                        status: feature.properties.is_out_of_stock ? 'No Fuel' : 'Available',
                         fuelTypes: feature.properties.fuel_type ? [feature.properties.fuel_type] : ['PMS'],
                         lat: feature.geometry.coordinates[1],
                         lng: feature.geometry.coordinates[0],
                         brand: feature.properties.brand,
                         fuel_type: feature.properties.fuel_type,
+                        last_updated_at: feature.properties.last_updated_at,
+                        is_boosted: feature.properties.is_boosted,
+                        promotion_id: feature.properties.promotion_id,
+                        tier_name: feature.properties.tier_name,
+                        reporter_name: feature.properties.reporter_name,
+                        price_type: feature.properties.price_type,
+                        rating: feature.properties.rating,
+                        is_out_of_stock: feature.properties.is_out_of_stock,
                     }));
 
                     setStations(stationList);
@@ -222,11 +248,20 @@ export default function Dashboard() {
                         name: feature.properties.name,
                         address: feature.properties.address || 'Address not available',
                         price: feature.properties.price || 0,
-                        status: 'Available',
+                        status: feature.properties.is_out_of_stock ? 'No Fuel' : 'Available',
                         fuelTypes: feature.properties.fuel_type ? [feature.properties.fuel_type] : ['PMS'],
                         lat: feature.geometry.coordinates[1],
                         lng: feature.geometry.coordinates[0],
                         brand: feature.properties.brand,
+                        fuel_type: feature.properties.fuel_type,
+                        last_updated_at: feature.properties.last_updated_at,
+                        is_boosted: feature.properties.is_boosted,
+                        promotion_id: feature.properties.promotion_id,
+                        tier_name: feature.properties.tier_name,
+                        reporter_name: feature.properties.reporter_name,
+                        price_type: feature.properties.price_type,
+                        rating: feature.properties.rating,
+                        is_out_of_stock: feature.properties.is_out_of_stock,
                     }));
                     setStations(stationList);
                 }
@@ -346,6 +381,18 @@ export default function Dashboard() {
                             <User className="w-5 h-5" />
                             Profile
                         </Link>
+                        <Link href="/dashboard/generator" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
+                            <Gauge className="w-5 h-5" />
+                            Gen-Manager
+                        </Link>
+                        <Link href="/dashboard/points-board" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
+                            <Trophy className="w-5 h-5" />
+                            Rewards Board
+                        </Link>
+                        <Link href="/dashboard/settings" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
+                            <Settings className="w-5 h-5" />
+                            Settings
+                        </Link>
                     </nav>
 
                     {/* User Profile - Always visible at bottom */}
@@ -418,6 +465,14 @@ export default function Dashboard() {
                                     <Link href="/dashboard/profile" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
                                         <User className="w-5 h-5" />
                                         Profile
+                                    </Link>
+                                    <Link href="/dashboard/generator" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
+                                        <Gauge className="w-5 h-5" />
+                                        Gen-Manager
+                                    </Link>
+                                    <Link href="/dashboard/settings" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
+                                        <Settings className="w-5 h-5" />
+                                        Settings
                                     </Link>
                                 </nav>
                             </div>
@@ -502,10 +557,13 @@ export default function Dashboard() {
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-0 sm:justify-between">
                             {/* Stats */}
                             <div className="flex items-center gap-4 sm:gap-6">
-                                <div className="text-center">
+                                <button 
+                                    onClick={handleRecenter}
+                                    className="text-center hover:opacity-70 transition-opacity"
+                                >
                                     <p className="text-xl sm:text-2xl font-bold text-[#3B0764] dark:text-white">{nearbyCount}</p>
                                     <p className="text-xs text-[#1A1A1A]/50 dark:text-white/50 uppercase tracking-wider">Nearby</p>
-                                </div>
+                                </button>
                                 <div className="w-px h-10 bg-[#3B0764]/10 dark:bg-white/10" />
                                 <div className="flex-1 min-w-0">
                                     <p className="font-semibold truncate text-sm sm:text-base">{locationName}</p>
@@ -550,56 +608,127 @@ export default function Dashboard() {
                             <span className="text-xs text-[#1A1A1A]/50 dark:text-white/50">{filteredStations.length} found</span>
                         </div>
                         <div className="flex-1 overflow-y-auto p-3 space-y-3">
-                            {filteredStations.map((station) => (
-                                <motion.div
-                                    key={station.id}
-                                    layout
-                                    onClick={() => setActiveStation(station.id === activeStation ? null : station.id)}
-                                    className={`p-4 rounded-2xl cursor-pointer transition-all border ${activeStation === station.id
-                                        ? 'bg-[#3B0764]/5 dark:bg-[#3B0764]/20 border-[#3B0764]'
-                                        : 'bg-white dark:bg-white/5 border-transparent hover:border-[#3B0764]/20'
+                            {filteredStations.map((station) => {
+                                const isBoosted = station.is_boosted;
+                                const isOutOfStock = station.is_out_of_stock;
+                                const distance = userLocation ? getDistance(userLocation.lat, userLocation.lng, station.lat, station.lng).toFixed(1) : null;
+                                
+                                return (
+                                    <motion.div
+                                        key={station.id}
+                                        layout
+                                        onClick={() => setActiveStation(station.id === activeStation ? null : station.id)}
+                                        className={`p-4 rounded-2xl cursor-pointer transition-all border ${
+                                            activeStation === station.id
+                                                ? 'bg-[#3B0764]/5 dark:bg-[#3B0764]/20 border-[#3B0764]'
+                                                : isBoosted 
+                                                    ? 'bg-[#FFD700]/5 border-[#FFD700]/30 hover:border-[#FFD700]' 
+                                                    : isOutOfStock
+                                                        ? 'bg-red-500/5 border-red-500/30 hover:border-red-500'
+                                                        : 'bg-white dark:bg-white/5 border-transparent hover:border-[#3B0764]/20'
                                         }`}
-                                >
-                                    <div className="flex items-start justify-between mb-2">
-                                        <div className="flex-1 min-w-0">
-                                            <h3 className="font-semibold truncate">{station.name}</h3>
-                                            <p className="text-xs text-[#1A1A1A]/50 dark:text-white/50 flex items-center gap-1 mt-0.5 truncate">
-                                                <MapPin className="w-3 h-3 shrink-0" />
-                                                {station.address}
-                                            </p>
-                                        </div>
-                                        <span className={`shrink-0 ml-2 text-xs font-medium px-2 py-1 rounded-full ${station.status === 'Available' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                            station.status === 'Busy' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                                'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                    >
+                                        <div className="flex gap-4">
+                                            <div className={`w-12 h-12 rounded-full shrink-0 flex items-center justify-center ${
+                                                isBoosted ? 'bg-[#FFD700]/20' : 'bg-[#3B0764]/5 dark:bg-white/5'
                                             }`}>
-                                            {station.status}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-end justify-between">
-                                        <div>
-                                            <p className="text-xl font-bold text-[#3B0764] dark:text-white">₦{station.price}</p>
-                                            <p className="text-xs text-[#1A1A1A]/40 dark:text-white/40">per liter (PMS)</p>
+                                                {isBoosted ? (
+                                                    <Star className="w-6 h-6 text-[#FFD700]" fill="currentColor" />
+                                                ) : (
+                                                    <Fuel className={`w-6 h-6 ${isBoosted ? 'text-[#FFD700]' : 'text-[#3B0764] dark:text-[#A855F7]'}`} />
+                                                )}
+                                            </div>
+                                            
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-start justify-between mb-1">
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <h3 
+                                                                onClick={(e) => { e.stopPropagation(); router.push(`/station/${station.id}`); }}
+                                                                className="font-bold truncate text-[#1A1A1A] dark:text-white hover:text-[#3B0764] dark:hover:text-[#A855F7] transition-colors"
+                                                            >
+                                                                {station.name}
+                                                            </h3>
+                                                            {isBoosted && (
+                                                                <span className="shrink-0 bg-[#FFD700] text-[#000] text-[10px] font-black px-1.5 py-0.5 rounded-md leading-none">
+                                                                    FEATURED
+                                                                </span>
+                                                            )}
+                                                            {isOutOfStock && (
+                                                                <span className="shrink-0 bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-md leading-none">
+                                                                    NO FUEL
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-xs text-[#1A1A1A]/40 dark:text-white/40 truncate mt-0.5">
+                                                            {station.address}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-3 mt-2">
+                                                    {distance && (
+                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-[#3B0764]/5 dark:bg-white/5 text-[11px] font-semibold text-[#1A1A1A]/60 dark:text-white/60">
+                                                            <Navigation className="w-3 h-3" />
+                                                            {distance} km
+                                                        </div>
+                                                    )}
+                                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-[#FFD700]/10 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                                                        <Star className="w-3 h-3" fill="currentColor" />
+                                                        {station.rating || '0.0'}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-end justify-between mt-4">
+                                                    <div>
+                                                        <div className="flex items-baseline gap-1">
+                                                            <span className="text-sm font-bold text-[#1A1A1A] dark:text-white underline decoration-[#3B0764]/30">₦</span>
+                                                            <span className="text-3xl font-black text-[#1A1A1A] dark:text-white tracking-tighter">
+                                                                {station.price ? Math.floor(station.price) : '---'}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-[10px] text-[#1A1A1A]/40 dark:text-white/40 font-medium uppercase tracking-wider">per liter (PMS)</p>
+                                                    </div>
+
+                                                    <div className="text-right flex flex-col items-end gap-2">
+                                                        <div className="flex items-center justify-end gap-1.5">
+                                                            {station.price_type === 'official' ? (
+                                                                <ShieldCheck className="w-3.5 h-3.5 text-green-500" />
+                                                            ) : station.price_type === 'station' ? (
+                                                                <CheckCircle className="w-3.5 h-3.5 text-amber-500" />
+                                                            ) : (
+                                                                <User className="w-3.5 h-3.5 text-purple-500" />
+                                                            )}
+                                                            <span className={`text-[11px] font-bold ${
+                                                                station.price_type === 'official' ? 'text-green-500' : 
+                                                                station.price_type === 'station' ? 'text-amber-500' : 'text-purple-500'
+                                                            }`}>
+                                                                {station.price_type === 'official' ? 'Official' : 
+                                                                 station.price_type === 'station' ? 'Manager' : `By ${station.reporter_name || 'User'}`}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-[10px] text-[#1A1A1A]/30 dark:text-white/30 font-medium italic">
+                                                                {station.last_updated_at ? new Date(station.last_updated_at).toLocaleDateString() : 'Updated recently'}
+                                                            </p>
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    router.push(`/station/${station.id}`);
+                                                                }}
+                                                                className="w-8 h-8 rounded-lg bg-[#3B0764] text-white flex items-center justify-center hover:bg-[#4C0D8C] transition-colors shadow-sm"
+                                                                aria-label="View station details"
+                                                            >
+                                                                <Eye className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleTrackStation(station.id); }}
-                                                className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${trackedStations.has(station.id)
-                                                    ? 'bg-[#3B0764] text-white'
-                                                    : 'bg-[#F5F5F0] dark:bg-white/5 text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/10'
-                                                    }`}
-                                            >
-                                                <Bookmark className="w-4 h-4" fill={trackedStations.has(station.id) ? 'currentColor' : 'none'} />
-                                            </button>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); router.push(`/station/${station.id}`); }}
-                                                className="w-9 h-9 rounded-xl bg-[#3B0764] text-white flex items-center justify-center hover:bg-[#4C0D8C] transition-colors"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            ))}
+                                    </motion.div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
@@ -613,55 +742,92 @@ export default function Dashboard() {
                             exit={{ y: 100, opacity: 0 }}
                             className="lg:hidden absolute bottom-44 left-3 right-3 sm:left-4 sm:right-4 z-40 max-w-md mx-auto"
                         >
-                            <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl shadow-2xl border border-[#3B0764]/10 dark:border-white/10 overflow-hidden">
-                                <div className="bg-gradient-to-r from-[#3B0764] to-[#5C0CA7] p-3 sm:p-4">
-                                    <div className="flex items-start justify-between gap-2">
+                            <div className="bg-white dark:bg-[#1A1A1A] rounded-3xl shadow-2xl border border-[#3B0764]/10 dark:border-white/10 overflow-hidden">
+                                <div className={`p-4 sm:p-5 ${selectedStation.is_boosted ? 'bg-[#FFD700]/10' : 'bg-gradient-to-r from-[#3B0764] to-[#5C0CA7]'}`}>
+                                    <div className="flex items-start justify-between gap-3">
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-xs text-white/70 uppercase tracking-wider truncate">{selectedStation.brand || 'Fuel Station'}</p>
-                                            <h3 className="text-lg sm:text-xl font-bold text-white truncate">{selectedStation.name}</h3>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <p className={`text-[10px] font-black uppercase tracking-widest ${selectedStation.is_boosted ? 'text-amber-600' : 'text-white/70'}`}>
+                                                    {selectedStation.brand || (selectedStation.is_boosted ? 'Featured Partner' : 'Fuel Station')}
+                                                </p>
+                                                {selectedStation.is_boosted && (
+                                                    <span className="bg-[#FFD700] text-black text-[9px] font-black px-1.5 py-0.5 rounded-md">BOOSTED</span>
+                                                )}
+                                            </div>
+                                            <h3 className={`text-xl sm:text-2xl font-black truncate ${selectedStation.is_boosted ? 'text-[#1A1A1A] dark:text-white' : 'text-white'}`}>
+                                                {selectedStation.name}
+                                            </h3>
                                         </div>
                                         <button
                                             onClick={() => setActiveStation(null)}
-                                            className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 touch-manipulation"
+                                            className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 touch-manipulation transition-colors ${selectedStation.is_boosted ? 'bg-black/5 hover:bg-black/10' : 'bg-white/20 hover:bg-white/30'}`}
                                             aria-label="Close"
                                         >
-                                            <X className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
+                                            <X className={`w-5 h-5 ${selectedStation.is_boosted ? 'text-black/60' : 'text-white'}`} />
                                         </button>
                                     </div>
                                 </div>
-                                <div className="p-3 sm:p-4">
-                                    <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#F5F5F0] dark:bg-white/5 flex items-center justify-center shrink-0">
-                                            <MapPin className="w-4 h-4 text-[#3B0764]" />
+                                <div className="p-4 sm:p-5">
+                                    <div className="flex gap-4 mb-6">
+                                        <div className="flex-1">
+                                            <div className="flex items-baseline gap-1">
+                                                <span className="text-sm font-bold text-[#3B0764] underline decoration-[#3B0764]/30">₦</span>
+                                                <span className="text-4xl font-black text-[#1A1A1A] dark:text-white tracking-tighter">
+                                                    {selectedStation.price ? Math.floor(selectedStation.price) : '---'}
+                                                </span>
+                                            </div>
+                                            <p className="text-[10px] text-[#1A1A1A]/40 dark:text-white/40 font-bold uppercase tracking-wider ml-1">per liter (PMS)</p>
                                         </div>
-                                        <p className="text-sm text-[#1A1A1A]/70 dark:text-white/70 truncate">{selectedStation.address}</p>
-                                    </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-                                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[#F5F5F0] dark:bg-white/5 flex items-center justify-center shrink-0">
-                                            <Fuel className="w-4 h-4 text-[#3B0764]" />
+                                        <div className="flex flex-col justify-end items-end">
+                                            <div className="flex items-center gap-1.5 mb-1">
+                                                {selectedStation.price_type === 'official' ? (
+                                                    <ShieldCheck className="w-4 h-4 text-green-500" />
+                                                ) : (
+                                                    <User className="w-4 h-4 text-purple-500" />
+                                                )}
+                                                <span className={`text-xs font-bold ${selectedStation.price_type === 'official' ? 'text-green-500' : 'text-purple-500'}`}>
+                                                    {selectedStation.price_type === 'official' ? 'Official' : `By ${selectedStation.reporter_name || 'User'}`}
+                                                </span>
+                                            </div>
+                                            <p className="text-[10px] text-[#1A1A1A]/30 dark:text-white/30 font-medium italic">
+                                                {selectedStation.last_updated_at ? new Date(selectedStation.last_updated_at).toLocaleDateString() : 'Updated recently'}
+                                            </p>
                                         </div>
-                                        <p className="text-sm">
-                                            <span className="font-bold text-[#3B0764] dark:text-white">₦{selectedStation.price}/L</span>
-                                            <span className="text-[#1A1A1A]/50 dark:text-white/50"> • PMS</span>
-                                        </p>
                                     </div>
-                                    <div className="flex gap-2 sm:gap-3">
+
+                                    <div className="grid grid-cols-2 gap-3 mb-6">
+                                        <div className="bg-[#F5F5F0] dark:bg-white/5 p-3 rounded-2xl border border-transparent hover:border-[#3B0764]/10 transition-colors">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Navigation className="w-3.5 h-3.5 text-[#3B0764]" />
+                                                <p className="text-[10px] text-[#1A1A1A]/40 dark:text-white/40 font-bold uppercase">Distance</p>
+                                            </div>
+                                            <p className="font-black text-[#1A1A1A] dark:text-white">{selectedStation.distance || '0.0 km'}</p>
+                                        </div>
+                                        <div className="bg-[#F5F5F0] dark:bg-white/5 p-3 rounded-2xl border border-transparent hover:border-[#3B0764]/10 transition-colors">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <Star className="w-3.5 h-3.5 text-amber-500" fill="currentColor" />
+                                                <p className="text-[10px] text-[#1A1A1A]/40 dark:text-white/40 font-bold uppercase">Rating</p>
+                                            </div>
+                                            <p className="font-black text-[#1A1A1A] dark:text-white">{selectedStation.rating || '0.0'}/5.0</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-3">
                                         <button
                                             onClick={() => handleTrackStation(selectedStation.id)}
-                                            className={`flex-1 py-3 sm:py-3.5 rounded-xl font-medium flex items-center justify-center gap-2 text-sm sm:text-base touch-manipulation transition-colors ${trackedStations.has(selectedStation.id)
+                                            className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${trackedStations.has(selectedStation.id)
                                                 ? 'bg-green-500 text-white'
                                                 : 'bg-[#F5F5F0] dark:bg-white/5 text-[#1A1A1A] dark:text-white hover:bg-[#3B0764]/10'
                                                 }`}
                                         >
-                                            <Bookmark className="w-4 h-4" fill={trackedStations.has(selectedStation.id) ? 'currentColor' : 'none'} />
-                                            <span className="hidden xs:inline">{trackedStations.has(selectedStation.id) ? 'Tracking' : 'Track'}</span>
+                                            <Bookmark className="w-6 h-6" fill={trackedStations.has(selectedStation.id) ? 'currentColor' : 'none'} />
                                         </button>
                                         <button
                                             onClick={() => router.push(`/station/${selectedStation.id}`)}
-                                            className="flex-1 py-3 sm:py-3.5 rounded-xl bg-[#3B0764] text-white font-medium flex items-center justify-center gap-2 hover:bg-[#4C0D8C] transition-colors text-sm sm:text-base touch-manipulation"
+                                            className="flex-1 h-14 rounded-2xl bg-[#3B0764] text-white font-black flex items-center justify-center gap-2 hover:bg-[#4C0D8C] transition-all active:scale-[0.98] shadow-xl shadow-[#3B0764]/20"
                                         >
-                                            <Eye className="w-4 h-4" />
-                                            Details
+                                            DETAILS
+                                            <ChevronRight className="w-5 h-5" />
                                         </button>
                                     </div>
                                 </div>
@@ -785,44 +951,84 @@ export default function Dashboard() {
                             className="lg:hidden absolute inset-0 z-20 bg-white dark:bg-[#1A1A1A] pt-20 pb-16"
                         >
                             <div className="h-full overflow-y-auto p-4 space-y-3">
-                                {filteredStations.map((station) => (
-                                    <div
-                                        key={station.id}
-                                        onClick={() => {
-                                            setActiveStation(station.id);
-                                            setMobileView('map');
-                                        }}
-                                        className="p-4 rounded-2xl bg-[#F5F5F0] dark:bg-white/5 border border-transparent hover:border-[#3B0764]/20"
-                                    >
-                                        <div className="flex items-start justify-between mb-2">
-                                            <div className="flex-1 min-w-0">
-                                                <h3 className="font-semibold truncate">{station.name}</h3>
-                                                <p className="text-xs text-[#1A1A1A]/50 dark:text-white/50 flex items-center gap-1 mt-0.5 truncate">
-                                                    <MapPin className="w-3 h-3 shrink-0" />
-                                                    {station.address}
-                                                </p>
-                                            </div>
-                                            <span className={`shrink-0 ml-2 text-xs font-medium px-2 py-1 rounded-full ${station.status === 'Available' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-                                                station.status === 'Busy' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-                                                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                {filteredStations.map((station) => {
+                                    const isBoosted = station.is_boosted;
+                                    const isOutOfStock = station.is_out_of_stock;
+                                    const distance = userLocation ? getDistance(userLocation.lat, userLocation.lng, station.lat, station.lng).toFixed(1) : null;
+
+                                    return (
+                                        <div
+                                            key={station.id}
+                                            onClick={() => {
+                                                setActiveStation(station.id);
+                                                setMobileView('map');
+                                            }}
+                                            className={`p-4 rounded-2xl transition-all border ${
+                                                isBoosted 
+                                                    ? 'bg-[#FFD700]/5 border-[#FFD700]/30' 
+                                                    : isOutOfStock
+                                                        ? 'bg-red-500/5 border-red-500/30'
+                                                        : 'bg-[#F5F5F0] dark:bg-white/5 border-transparent'
+                                            }`}
+                                        >
+                                            <div className="flex gap-4">
+                                                <div className={`w-12 h-12 rounded-full shrink-0 flex items-center justify-center ${
+                                                    isBoosted ? 'bg-[#FFD700]/20' : 'bg-[#3B0764]/5 dark:bg-white/5'
                                                 }`}>
-                                                {station.status}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-end justify-between">
-                                            <div>
-                                                <p className="text-xl font-bold text-[#3B0764] dark:text-white">₦{station.price}</p>
-                                                <p className="text-xs text-[#1A1A1A]/40 dark:text-white/40">per liter (PMS)</p>
+                                                    {isBoosted ? (
+                                                        <Star className="w-6 h-6 text-[#FFD700]" fill="currentColor" />
+                                                    ) : (
+                                                        <Fuel className={`w-6 h-6 ${isBoosted ? 'text-[#FFD700]' : 'text-[#3B0764] dark:text-[#A855F7]'}`} />
+                                                    )}
+                                                </div>
+
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-start justify-between mb-1">
+                                                        <div className="flex-1 min-w-0">
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 
+                                                                    onClick={(e) => { e.stopPropagation(); router.push(`/station/${station.id}`); }}
+                                                                    className="font-bold truncate hover:text-[#3B0764] transition-colors"
+                                                                >
+                                                                    {station.name}
+                                                                </h3>
+                                                                {isBoosted && (
+                                                                    <span className="shrink-0 bg-[#FFD700] text-[#000] text-[10px] font-black px-1.5 py-0.5 rounded-md">
+                                                                        FEATURED
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-xs text-[#1A1A1A]/40 dark:text-white/40 truncate mt-0.5">
+                                                                {station.address}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex items-end justify-between mt-4">
+                                                        <div>
+                                                            <div className="flex items-baseline gap-1">
+                                                                <span className="text-sm font-bold underline decoration-[#3B0764]/30">₦</span>
+                                                                <span className="text-3xl font-black tracking-tighter">
+                                                                    {station.price ? Math.floor(station.price) : '---'}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[10px] text-[#1A1A1A]/40 dark:text-white/40 font-medium uppercase tracking-wider">per liter (PMS)</p>
+                                                        </div>
+
+                                                        <div className="flex gap-2">
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); router.push(`/station/${station.id}`); }}
+                                                                className="w-10 h-10 rounded-xl bg-[#3B0764] text-white flex items-center justify-center"
+                                                            >
+                                                                <Eye className="w-4 h-4" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); router.push(`/station/${station.id}`); }}
-                                                className="w-10 h-10 rounded-xl bg-[#3B0764] text-white flex items-center justify-center hover:bg-[#4C0D8C] transition-colors"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                            </button>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </motion.div>
                     )}

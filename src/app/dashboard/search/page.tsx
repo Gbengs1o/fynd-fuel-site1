@@ -94,15 +94,20 @@ export default function SearchPage() {
             if (error) throw error;
 
             if (baseStations) {
-                // Determine missing fields and fill defaults or fetch more data if needed
-                // Assuming baseStations returns enough or we map it
                 const stationsWithDistance = baseStations.map((s: any) => ({
                     ...s,
-                    status: s.status || 'Available', // Default
-                    price: s.latest_pms_price || 0, // Fallback
-                    average_rating: s.rating || 0, // Fallback logic
+                    status: s.status || (s.is_out_of_stock ? 'No Fuel' : 'Available'),
+                    price: s.latest_pms_price || 0,
+                    average_rating: s.rating || 0,
                     products: s.fuel_types || [],
-                    distance_meters: s.distance_meters || 0
+                    distance_meters: s.distance_meters || 0,
+                    distance: s.distance_meters ? (s.distance_meters / 1000).toFixed(1) + ' km' : '0.0 km',
+                    is_boosted: s.is_boosted || false,
+                    is_out_of_stock: s.is_out_of_stock || false,
+                    reporter_name: s.reporter_name || '',
+                    price_type: s.price_type || 'user',
+                    rating: s.rating || 0,
+                    updated_at: s.last_updated_at || s.updated_at
                 }));
                 setAllStations(stationsWithDistance);
             }
