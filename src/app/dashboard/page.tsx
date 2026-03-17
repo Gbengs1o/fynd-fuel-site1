@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -10,6 +10,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { LetterAvatar } from '@/components/LetterAvatar';
 import Logo from '@/components/Logo';
+
+interface LeaderboardEntry {
+    user_id: string;
+    full_name: string;
+    avatar_url: string | null;
+    report_count: number;
+    rank_number: number;
+}
 
 interface Station {
     id: number;
@@ -78,6 +86,7 @@ export default function Dashboard() {
     const [stations, setStations] = useState<Station[]>([]);
     const [stationGeoJSON, setStationGeoJSON] = useState<GeoJSONData | null>(null);
     const [trackedStations, setTrackedStations] = useState<Set<number>>(new Set());
+    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [nearbyCount, setNearbyCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -142,6 +151,22 @@ export default function Dashboard() {
         };
 
         fetchStations();
+    }, []);
+
+    // Fetch Leaderboard for Top Contributors
+    useEffect(() => {
+        const fetchLeaderboard = async () => {
+            try {
+                const { data, error } = await supabase.rpc('get_leaderboard');
+                if (error) throw error;
+                // Only keep top 3 for the dashboard preview
+                setLeaderboard(data ? data.slice(0, 3) : []);
+            } catch (error) {
+                console.error('Error fetching leaderboard for dashboard preview:', error);
+            }
+        };
+
+        fetchLeaderboard();
     }, []);
 
     // Fetch user's tracked/favourite stations
@@ -320,10 +345,12 @@ export default function Dashboard() {
         }
     };
 
-    const filteredStations = stations.filter(station =>
-        station.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        station.address.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredStations = useMemo(() => {
+        return stations.filter(station =>
+            station.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            station.address.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [stations, searchTerm]);
 
     const selectedStation = stations.find(s => s.id === activeStation);
 
@@ -385,9 +412,9 @@ export default function Dashboard() {
                             <Gauge className="w-5 h-5" />
                             Gen-Manager
                         </Link>
-                        <Link href="/dashboard/points-board" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
+                        <Link href="/dashboard/leaderboard" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
                             <Trophy className="w-5 h-5" />
-                            Rewards Board
+                            Leadership Board
                         </Link>
                         <Link href="/dashboard/settings" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#3B0764]/5 dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors">
                             <Settings className="w-5 h-5" />
@@ -470,11 +497,47 @@ export default function Dashboard() {
                                         <Gauge className="w-5 h-5" />
                                         Gen-Manager
                                     </Link>
+                                    <Link href="/dashboard/leaderboard" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
+                                        <Trophy className="w-5 h-5 text-amber-500" />
+                                        Leadership Board
+                                    </Link>
                                     <Link href="/dashboard/settings" className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-[#1A1A1A]/60 dark:text-white/60 hover:bg-[#F5F5F0] dark:hover:bg-white/5">
                                         <Settings className="w-5 h-5" />
                                         Settings
                                     </Link>
                                 </nav>
+
+                                {/* Mini Leaderboard in Mobile Sidebar */}
+                                {leaderboard.length > 0 && (
+                                    <div className="px-6 mb-8">
+                                        <div className="bg-[#F5F5F0] dark:bg-white/5 rounded-2x border border-[#3B0764]/5 dark:border-white/5 p-4">
+                                            <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#3B0764]/10">
+                                                <h3 className="text-xs font-black uppercase tracking-wider text-[#1A1A1A]/40 dark:text-white/40">Top Contributors</h3>
+                                                <Trophy className="w-3 h-3 text-amber-500" />
+                                            </div>
+                                            <div className="space-y-3">
+                                                {leaderboard.map((u) => (
+                                                    <div key={u.user_id} className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-5 h-5 rounded-full bg-white dark:bg-[#1A1A1A] flex items-center justify-center text-[9px] font-black border border-[#3B0764]/10 shrink-0">
+                                                                {u.rank_number}
+                                                            </div>
+                                                            <LetterAvatar name={u.full_name} avatarUrl={u.avatar_url} size={24} />
+                                                            <span className="text-xs font-bold truncate max-w-[100px]">{u.full_name}</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-[#3B0764] dark:text-purple-400">{u.report_count} pts</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <button 
+                                                onClick={() => router.push('/dashboard/leaderboard')}
+                                                className="w-full mt-4 py-2 bg-[#3B0764] text-white text-[10px] font-black rounded-lg uppercase tracking-widest shadow-lg shadow-[#3B0764]/20"
+                                            >
+                                                View Rankings
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Fixed Logout Button at Bottom */}
@@ -601,8 +664,43 @@ export default function Dashboard() {
                 </div>
 
                 {/* Station List Panel - Desktop */}
-                <div className={`absolute top-24 right-4 lg:right-6 bottom-24 w-[360px] z-30 hidden lg:block`}>
-                    <div className="h-full bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-xl rounded-2xl border border-[#3B0764]/10 dark:border-white/10 shadow-lg overflow-hidden flex flex-col">
+                <div className={`absolute top-24 right-4 lg:right-6 bottom-24 w-[360px] z-30 hidden lg:flex lg:flex-col lg:gap-4`}>
+                    
+                    {/* Top Contributors Mini-Leadership Board */}
+                    {leaderboard.length > 0 && (
+                        <div className="bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-xl rounded-2xl border border-[#3B0764]/10 dark:border-white/10 shadow-lg p-4 shrink-0">
+                            <div className="flex items-center justify-between mb-3 border-b border-[#3B0764]/10 dark:border-white/10 pb-2">
+                                <div className="flex items-center gap-2">
+                                    <Trophy className="w-4 h-4 text-[#FFB800]" />
+                                    <h2 className="font-bold text-sm text-[#1A1A1A] dark:text-white">Top Contributors</h2>
+                                </div>
+                                <button 
+                                    onClick={() => router.push('/dashboard/leaderboard')}
+                                    className="text-[10px] font-bold text-[#3B0764] dark:text-[#A855F7] hover:underline"
+                                >
+                                    VIEW ALL
+                                </button>
+                            </div>
+                            <div className="space-y-2">
+                                {leaderboard.map((user) => (
+                                    <div key={user.user_id} className="flex items-center justify-between p-2 rounded-xl bg-[#F5F5F0] dark:bg-white/5 border border-transparent hover:border-[#3B0764]/10 transition-colors">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className="w-5 h-5 flex items-center justify-center bg-white dark:bg-[#1A1A1A] rounded-full text-[10px] font-black shadow-sm shrink-0 border border-[#3B0764]/10">
+                                                {user.rank_number}
+                                            </div>
+                                            <LetterAvatar name={user.full_name} avatarUrl={user.avatar_url} size={24} className="shrink-0" />
+                                            <p className="font-semibold text-xs truncate text-[#1A1A1A] dark:text-white">{user.full_name}</p>
+                                        </div>
+                                        <span className="text-[10px] font-bold text-[#3B0764] dark:text-purple-400 bg-[#3B0764]/5 dark:bg-purple-900/20 px-1.5 py-0.5 rounded shrink-0">
+                                            {user.report_count} pts
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex-1 bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-xl rounded-2xl border border-[#3B0764]/10 dark:border-white/10 shadow-lg overflow-hidden flex flex-col min-h-0">
                         <div className="px-4 py-3 border-b border-[#3B0764]/10 dark:border-white/10 flex items-center justify-between">
                             <h2 className="font-semibold">Nearby Stations</h2>
                             <span className="text-xs text-[#1A1A1A]/50 dark:text-white/50">{filteredStations.length} found</span>

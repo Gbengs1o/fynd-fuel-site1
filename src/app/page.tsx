@@ -2,6 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Fuel, MapPin, Shield, Star, ArrowRight, Menu, CheckCircle, X } from 'lucide-react';
 import { motion, useScroll, useTransform, useSpring, AnimatePresence } from 'framer-motion';
 
@@ -125,16 +126,22 @@ export default function Home() {
               >
                 {/* High-Res Image Carousel */}
                 <AnimatePresence mode="popLayout">
-                  <motion.img
+                  <motion.div
                     key={currentImageIndex}
-                    src={heroImages[currentImageIndex]}
-                    alt="Hero Carousel"
-                    className="absolute inset-0 w-full h-full object-cover object-[center_20%]"
+                    className="absolute inset-0 w-full h-full"
                     initial={{ x: "100%" }}
                     animate={{ x: 0 }}
                     exit={{ x: "-100%" }}
                     transition={{ duration: 0.8, ease: "easeInOut" }}
-                  />
+                  >
+                    <Image
+                      src={heroImages[currentImageIndex]}
+                      alt="Hero Carousel"
+                      fill
+                      priority={currentImageIndex === 0}
+                      className="object-cover object-[center_20%]"
+                    />
+                  </motion.div>
                 </AnimatePresence>
 
                 {/* Dark Overlay that gets darker on scroll */}

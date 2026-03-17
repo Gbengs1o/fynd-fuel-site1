@@ -12,6 +12,14 @@ import { LetterAvatar } from '@/components/LetterAvatar';
 import LoadingAnimation from '@/components/LoadingAnimation';
 import { motion } from 'framer-motion';
 
+interface LeaderboardEntry {
+    user_id: string;
+    full_name: string;
+    avatar_url: string | null;
+    report_count: number;
+    rank_number: number;
+}
+
 interface SettingsItemProps {
     icon: React.ReactNode;
     label: string;
@@ -63,6 +71,7 @@ export default function SettingsPage() {
     const router = useRouter();
     const [user, setUser] = useState<any>(null);
     const [profile, setProfile] = useState<any>(null);
+    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDarkMode, setIsDarkMode] = useState(false);
 
@@ -90,6 +99,22 @@ export default function SettingsPage() {
         };
         checkAuth();
     }, [router]);
+
+    // Fetch Leaderboard for Top Contributors
+    useEffect(() => {
+        const fetchLeaderboard = async () => {
+            try {
+                const { data, error } = await supabase.rpc('get_leaderboard');
+                if (error) throw error;
+                // Only keep top 3 for the preview
+                setLeaderboard(data ? data.slice(0, 3) : []);
+            } catch (error) {
+                console.error('Error fetching leaderboard for settings preview:', error);
+            }
+        };
+
+        fetchLeaderboard();
+    }, []);
 
     const handleSignOut = async () => {
         await supabase.auth.signOut();
@@ -145,6 +170,46 @@ export default function SettingsPage() {
                     </div>
                     <ChevronRight className="w-5 h-5 text-[#1A1A1A]/20 dark:text-white/20 group-hover:translate-x-1 transition-transform" />
                 </button>
+
+                {/* Top Contributors Mini-Leadership Board */}
+                {leaderboard.length > 0 && (
+                    <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-8"
+                    >
+                        <div className="bg-white dark:bg-[#1A1A1A] p-6 rounded-[32px] shadow-sm border border-[#3B0764]/5 dark:border-white/5">
+                            <div className="flex items-center justify-between mb-4 border-b border-[#3B0764]/10 dark:border-white/10 pb-3">
+                                <div className="flex items-center gap-2">
+                                    <Trophy className="w-5 h-5 text-[#FFB800]" />
+                                    <h3 className="text-sm font-black text-[#1A1A1A] dark:text-white uppercase tracking-widest">Top Contributors</h3>
+                                </div>
+                                <button 
+                                    onClick={() => router.push('/dashboard/leaderboard')}
+                                    className="text-[10px] font-black text-[#3B0764] dark:text-purple-400 hover:underline tracking-widest uppercase"
+                                >
+                                    View Rankings
+                                </button>
+                            </div>
+                            <div className="space-y-3">
+                                {leaderboard.map((user) => (
+                                    <div key={user.user_id} className="flex items-center justify-between p-3 rounded-2xl bg-[#F5F5F0] dark:bg-white/5 border border-transparent hover:border-[#3B0764]/10 transition-colors">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-6 h-6 flex items-center justify-center bg-white dark:bg-[#1A1A1A] rounded-full text-xs font-black shadow-sm shrink-0 border border-[#3B0764]/10">
+                                                {user.rank_number}
+                                            </div>
+                                            <LetterAvatar name={user.full_name} avatarUrl={user.avatar_url} size={32} className="shrink-0" />
+                                            <p className="font-bold text-sm truncate text-[#1A1A1A] dark:text-white">{user.full_name}</p>
+                                        </div>
+                                        <span className="text-[11px] font-black text-[#3B0764] dark:text-purple-400 bg-[#3B0764]/5 dark:bg-purple-900/20 px-2.5 py-1 rounded-lg shrink-0">
+                                            {user.report_count} pts
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
 
                 <Section title="Appearance">
                     <SettingsItem 
