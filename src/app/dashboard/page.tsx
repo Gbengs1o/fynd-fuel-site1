@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { LetterAvatar } from '@/components/LetterAvatar';
 import Logo from '@/components/Logo';
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface LeaderboardEntry {
     user_id: string;
@@ -88,6 +89,7 @@ export default function Dashboard() {
     const [trackedStations, setTrackedStations] = useState<Set<number>>(new Set());
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
     const [nearbyCount, setNearbyCount] = useState(0);
+    const { unreadCount } = useNotifications();
     const [isLoading, setIsLoading] = useState(true);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -603,9 +605,12 @@ export default function Dashboard() {
 
                             <Link
                                 href="/dashboard/notifications"
-                                className="p-2 rounded-xl text-[#1A1A1A]/40 dark:text-white/40 hover:bg-[#F5F5F0] dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors shrink-0"
+                                className="p-2 rounded-xl text-[#1A1A1A]/40 dark:text-white/40 hover:bg-[#F5F5F0] dark:hover:bg-white/5 hover:text-[#3B0764] dark:hover:text-white transition-colors shrink-0 relative"
                             >
                                 <Bell className="w-5 h-5" />
+                                {unreadCount > 0 && (
+                                    <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white dark:border-[#1A1A1A] rounded-full" />
+                                )}
                             </Link>
                             <div className="shrink-0">
                                 <ThemeToggle />
@@ -666,160 +671,153 @@ export default function Dashboard() {
                 {/* Station List Panel - Desktop */}
                 <div className={`absolute top-24 right-4 lg:right-6 bottom-24 w-[360px] z-30 hidden lg:flex lg:flex-col lg:gap-4`}>
                     
-                    {/* Top Contributors Mini-Leadership Board */}
-                    {leaderboard.length > 0 && (
-                        <div className="bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-xl rounded-2xl border border-[#3B0764]/10 dark:border-white/10 shadow-lg p-4 shrink-0">
-                            <div className="flex items-center justify-between mb-3 border-b border-[#3B0764]/10 dark:border-white/10 pb-2">
-                                <div className="flex items-center gap-2">
-                                    <Trophy className="w-4 h-4 text-[#FFB800]" />
-                                    <h2 className="font-bold text-sm text-[#1A1A1A] dark:text-white">Top Contributors</h2>
-                                </div>
-                                <button 
-                                    onClick={() => router.push('/dashboard/leaderboard')}
-                                    className="text-[10px] font-bold text-[#3B0764] dark:text-[#A855F7] hover:underline"
-                                >
-                                    VIEW ALL
-                                </button>
-                            </div>
-                            <div className="space-y-2">
-                                {leaderboard.map((user) => (
-                                    <div key={user.user_id} className="flex items-center justify-between p-2 rounded-xl bg-[#F5F5F0] dark:bg-white/5 border border-transparent hover:border-[#3B0764]/10 transition-colors">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <div className="w-5 h-5 flex items-center justify-center bg-white dark:bg-[#1A1A1A] rounded-full text-[10px] font-black shadow-sm shrink-0 border border-[#3B0764]/10">
-                                                {user.rank_number}
-                                            </div>
-                                            <LetterAvatar name={user.full_name} avatarUrl={user.avatar_url} size={24} className="shrink-0" />
-                                            <p className="font-semibold text-xs truncate text-[#1A1A1A] dark:text-white">{user.full_name}</p>
-                                        </div>
-                                        <span className="text-[10px] font-bold text-[#3B0764] dark:text-purple-400 bg-[#3B0764]/5 dark:bg-purple-900/20 px-1.5 py-0.5 rounded shrink-0">
-                                            {user.report_count} pts
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
 
-                    <div className="flex-1 bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-xl rounded-2xl border border-[#3B0764]/10 dark:border-white/10 shadow-lg overflow-hidden flex flex-col min-h-0">
-                        <div className="px-4 py-3 border-b border-[#3B0764]/10 dark:border-white/10 flex items-center justify-between">
-                            <h2 className="font-semibold">Nearby Stations</h2>
-                            <span className="text-xs text-[#1A1A1A]/50 dark:text-white/50">{filteredStations.length} found</span>
+                    <div className="flex-1 bg-white/95 dark:bg-[#111]/95 backdrop-blur-2xl rounded-3xl border border-white/60 dark:border-white/5 shadow-2xl overflow-hidden flex flex-col min-h-0">
+                        {/* Header with subtle gradient */}
+                        <div className="px-5 py-5 flex items-center justify-between shrink-0 border-b border-[#3B0764]/10 dark:border-white/5 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-[#3B0764]/5 to-transparent pointer-events-none" />
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#3B0764] to-[#5C0CA7] flex items-center justify-center shadow-lg shadow-[#3B0764]/20">
+                                    <Fuel className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="font-black text-base text-[#1A1A1A] dark:text-white leading-none tracking-tight">Nearby Stations</h2>
+                                    <p className="text-[10px] text-[#1A1A1A]/40 dark:text-white/40 font-bold uppercase tracking-widest mt-1">
+                                        {filteredStations.length} {filteredStations.length === 1 ? 'STATION' : 'STATIONS'} FOUND
+                                    </p>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex-1 overflow-y-auto p-3 space-y-3">
+
+                        {/* Scrollable list with better spacing */}
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
                             {filteredStations.map((station) => {
                                 const isBoosted = station.is_boosted;
                                 const isOutOfStock = station.is_out_of_stock;
                                 const distance = userLocation ? getDistance(userLocation.lat, userLocation.lng, station.lat, station.lng).toFixed(1) : null;
+                                const isSelected = activeStation === station.id;
                                 
                                 return (
                                     <motion.div
                                         key={station.id}
                                         layout
-                                        onClick={() => setActiveStation(station.id === activeStation ? null : station.id)}
-                                        className={`p-4 rounded-2xl cursor-pointer transition-all border ${
-                                            activeStation === station.id
-                                                ? 'bg-[#3B0764]/5 dark:bg-[#3B0764]/20 border-[#3B0764]'
+                                        onClick={() => setActiveStation(isSelected ? null : station.id)}
+                                        className={`p-5 rounded-3xl cursor-pointer transition-all duration-300 border ${
+                                            isSelected
+                                                ? 'bg-gradient-to-br from-[#3B0764] to-[#5C0CA7] border-transparent shadow-xl shadow-[#3B0764]/30'
                                                 : isBoosted 
-                                                    ? 'bg-[#FFD700]/5 border-[#FFD700]/30 hover:border-[#FFD700]' 
+                                                    ? 'bg-amber-50/50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-500/30 hover:shadow-md' 
                                                     : isOutOfStock
-                                                        ? 'bg-red-500/5 border-red-500/30 hover:border-red-500'
-                                                        : 'bg-white dark:bg-white/5 border-transparent hover:border-[#3B0764]/20'
+                                                        ? 'bg-red-50/50 dark:bg-red-900/10 border-red-200 dark:border-red-500/30'
+                                                        : 'bg-[#F9F9F7] dark:bg-white/5 border-transparent hover:bg-white dark:hover:bg-white/10 hover:border-[#3B0764]/10 dark:hover:border-white/10 hover:shadow-subtle'
                                         }`}
                                     >
                                         <div className="flex gap-4">
-                                            <div className={`w-12 h-12 rounded-full shrink-0 flex items-center justify-center ${
-                                                isBoosted ? 'bg-[#FFD700]/20' : 'bg-[#3B0764]/5 dark:bg-white/5'
-                                            }`}>
-                                                {isBoosted ? (
-                                                    <Star className="w-6 h-6 text-[#FFD700]" fill="currentColor" />
-                                                ) : (
-                                                    <Fuel className={`w-6 h-6 ${isBoosted ? 'text-[#FFD700]' : 'text-[#3B0764] dark:text-[#A855F7]'}`} />
-                                                )}
+                                            {/* Left Section: Icon and Image */}
+                                            <div className="relative group">
+                                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm transition-transform duration-300 group-hover:scale-105 ${
+                                                    isSelected ? 'bg-white/20' : isBoosted ? 'bg-amber-400 text-black' : 'bg-white dark:bg-[#222] border border-[#3B0764]/5 dark:border-white/5'
+                                                }`}>
+                                                    {isBoosted ? (
+                                                        <Star className="w-7 h-7" fill="currentColor" />
+                                                    ) : (
+                                                        <Fuel className={`w-7 h-7 ${isSelected ? 'text-white' : 'text-[#3B0764] dark:text-purple-400'}`} />
+                                                    )}
+                                                </div>
                                             </div>
                                             
+                                            {/* Main Info Section */}
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex items-start justify-between mb-1">
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex items-center gap-2">
-                                                            <h3 
-                                                                onClick={(e) => { e.stopPropagation(); router.push(`/station/${station.id}`); }}
-                                                                className="font-bold truncate text-[#1A1A1A] dark:text-white hover:text-[#3B0764] dark:hover:text-[#A855F7] transition-colors"
-                                                            >
-                                                                {station.name}
-                                                            </h3>
-                                                            {isBoosted && (
-                                                                <span className="shrink-0 bg-[#FFD700] text-[#000] text-[10px] font-black px-1.5 py-0.5 rounded-md leading-none">
-                                                                    FEATURED
-                                                                </span>
-                                                            )}
-                                                            {isOutOfStock && (
-                                                                <span className="shrink-0 bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-md leading-none">
-                                                                    NO FUEL
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <p className="text-xs text-[#1A1A1A]/40 dark:text-white/40 truncate mt-0.5">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1 min-w-0 pr-2">
+                                                        <h3 className={`font-black text-sm truncate tracking-tight transition-colors ${
+                                                            isSelected ? 'text-white' : 'text-[#1A1A1A] dark:text-white'
+                                                        }`}>
+                                                            {station.name}
+                                                        </h3>
+                                                        <p className={`text-[11px] font-medium truncate mt-0.5 ${
+                                                            isSelected ? 'text-white/60' : 'text-[#1A1A1A]/40 dark:text-white/40'
+                                                        }`}>
                                                             {station.address}
                                                         </p>
                                                     </div>
+                                                    <div className="flex flex-col items-end shrink-0 gap-1.5">
+                                                        {isOutOfStock && (
+                                                            <span className="bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full leading-none shadow-sm shadow-red-500/20">OUT</span>
+                                                        )}
+                                                        {isBoosted && !isSelected && (
+                                                            <span className="bg-amber-400 text-black text-[9px] font-black px-2 py-0.5 rounded-full leading-none">FEATURED</span>
+                                                        )}
+                                                    </div>
                                                 </div>
 
-                                                <div className="flex items-center gap-3 mt-2">
+                                                {/* Stats Pills */}
+                                                <div className="flex items-center gap-2 mt-3 flex-wrap">
                                                     {distance && (
-                                                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-[#3B0764]/5 dark:bg-white/5 text-[11px] font-semibold text-[#1A1A1A]/60 dark:text-white/60">
+                                                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black transition-colors ${
+                                                            isSelected ? 'bg-white/10 text-white' : 'bg-[#3B0764]/5 dark:bg-white/10 text-[#1A1A1A]/60 dark:text-white/60'
+                                                        }`}>
                                                             <Navigation className="w-3 h-3" />
-                                                            {distance} km
+                                                            {distance} KM
                                                         </div>
                                                     )}
-                                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-[#FFD700]/10 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                                                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black transition-colors ${
+                                                        isSelected ? 'bg-white/10 text-white' : 'bg-[#FFB800]/10 text-[#B88600] dark:text-amber-400'
+                                                    }`}>
                                                         <Star className="w-3 h-3" fill="currentColor" />
                                                         {station.rating || '0.0'}
                                                     </div>
                                                 </div>
 
+                                                {/* Price/Action Section */}
                                                 <div className="flex items-end justify-between mt-4">
                                                     <div>
+                                                        <p className={`text-[10px] font-black uppercase tracking-widest mb-0.5 ${
+                                                            isSelected ? 'text-white/50' : 'text-[#1A1A1A]/30 dark:text-white/30'
+                                                        }`}>PMS PRICE</p>
                                                         <div className="flex items-baseline gap-1">
-                                                            <span className="text-sm font-bold text-[#1A1A1A] dark:text-white underline decoration-[#3B0764]/30">₦</span>
-                                                            <span className="text-3xl font-black text-[#1A1A1A] dark:text-white tracking-tighter">
+                                                            <span className={`text-sm font-black ${isSelected ? 'text-white' : 'text-[#3B0764] dark:text-white'}`}>₦</span>
+                                                            <span className={`text-3xl font-black tracking-tighter transition-all ${
+                                                                isSelected ? 'text-white' : 'text-[#1A1A1A] dark:text-white'
+                                                            }`}>
                                                                 {station.price ? Math.floor(station.price) : '---'}
                                                             </span>
                                                         </div>
-                                                        <p className="text-[10px] text-[#1A1A1A]/40 dark:text-white/40 font-medium uppercase tracking-wider">per liter (PMS)</p>
                                                     </div>
 
-                                                    <div className="text-right flex flex-col items-end gap-2">
-                                                        <div className="flex items-center justify-end gap-1.5">
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors ${
+                                                            isSelected ? 'bg-white/10 text-white' : 'bg-[#3B0764]/5 dark:bg-white/5'
+                                                        }`}>
                                                             {station.price_type === 'official' ? (
-                                                                <ShieldCheck className="w-3.5 h-3.5 text-green-500" />
+                                                                <ShieldCheck className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-green-500'}`} />
                                                             ) : station.price_type === 'station' ? (
-                                                                <CheckCircle className="w-3.5 h-3.5 text-amber-500" />
+                                                                <CheckCircle className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-amber-500'}`} />
                                                             ) : (
-                                                                <User className="w-3.5 h-3.5 text-purple-500" />
+                                                                <User className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-purple-500'}`} />
                                                             )}
-                                                            <span className={`text-[11px] font-bold ${
+                                                            <span className={`text-[10px] font-black uppercase tracking-wide ${
+                                                                isSelected ? 'text-white' : 
                                                                 station.price_type === 'official' ? 'text-green-500' : 
-                                                                station.price_type === 'station' ? 'text-amber-500' : 'text-purple-500'
+                                                                station.price_type === 'station' ? 'text-amber-500' : 'text-[#3B0764] dark:text-purple-400'
                                                             }`}>
-                                                                {station.price_type === 'official' ? 'Official' : 
-                                                                 station.price_type === 'station' ? 'Manager' : `By ${station.reporter_name || 'User'}`}
+                                                                {station.price_type === 'official' ? 'OFFICIAL' : 
+                                                                 station.price_type === 'station' ? 'MANAGER' : (station.reporter_name || 'USER')}
                                                             </span>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <p className="text-[10px] text-[#1A1A1A]/30 dark:text-white/30 font-medium italic">
-                                                                {station.last_updated_at ? new Date(station.last_updated_at).toLocaleDateString() : 'Updated recently'}
-                                                            </p>
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    router.push(`/station/${station.id}`);
-                                                                }}
-                                                                className="w-8 h-8 rounded-lg bg-[#3B0764] text-white flex items-center justify-center hover:bg-[#4C0D8C] transition-colors shadow-sm"
-                                                                aria-label="View station details"
-                                                            >
-                                                                <Eye className="w-4 h-4" />
-                                                            </button>
-                                                        </div>
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                router.push(`/station/${station.id}`);
+                                                            }}
+                                                            className={`h-9 px-4 rounded-xl font-black text-[11px] uppercase tracking-widest transition-all shadow-md active:scale-95 ${
+                                                                isSelected 
+                                                                    ? 'bg-white text-[#3B0764] hover:bg-white shadow-white/10' 
+                                                                    : 'bg-[#3B0764] text-white hover:bg-[#4C0D8C] shadow-[#3B0764]/20'
+                                                            }`}
+                                                        >
+                                                            VIEW DETAIL
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>

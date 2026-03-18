@@ -28,10 +28,10 @@ export default function MobileNav({ viewMode, setViewMode }: MobileNavProps) {
                 <span className="text-[10px] font-bold">Map</span>
             </button>
 
-            <button className="flex flex-col items-center justify-center w-full h-full space-y-1 text-[var(--foreground)] opacity-50">
+            <Link href="/dashboard/favorites" className="flex flex-col items-center justify-center w-full h-full space-y-1 text-[var(--foreground)] opacity-50">
                 <Heart size={22} />
                 <span className="text-[10px] font-bold">Saved</span>
-            </button>
+            </Link>
 
             <Link href="/dashboard/profile" className="flex flex-col items-center justify-center w-full h-full space-y-1 text-[var(--foreground)] opacity-50">
                 <User size={22} />

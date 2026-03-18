@@ -9,9 +9,13 @@ import AdvertCard, { Advert } from '@/components/AdvertCard';
 import LoadingAnimation from '@/components/LoadingAnimation';
 import { motion } from 'framer-motion';
 
+import Link from 'next/link';
+import { getVehicleStatus } from '@/lib/gamification';
+
 interface LeaderboardEntry {
     user_id: string;
     full_name: string;
+    nickname: string | null;
     avatar_url: string | null;
     report_count: number;
     rank_number: number;
@@ -20,6 +24,8 @@ interface LeaderboardEntry {
 const PodiumItem = ({ user, rank }: { user: LeaderboardEntry, rank: number }) => {
     const isFirst = rank === 1;
     const size = isFirst ? 80 : 60;
+    const displayName = user.nickname || user.full_name;
+    const vehicle = getVehicleStatus(user.report_count * 30); // Points calculation based on reports
 
     const rankColors: Record<number, string> = {
         1: 'bg-yellow-400 border-yellow-500',
@@ -28,11 +34,11 @@ const PodiumItem = ({ user, rank }: { user: LeaderboardEntry, rank: number }) =>
     };
 
     return (
-        <div className={`flex flex-col items-center ${isFirst ? '-mt-4 z-10' : 'mt-4'}`}>
+        <Link href={`/user/${user.user_id}`} className={`flex flex-col items-center transition-transform hover:scale-105 ${isFirst ? '-mt-4 z-10' : 'mt-4'}`}>
             <div className="relative">
                 <LetterAvatar
                     avatarUrl={user.avatar_url}
-                    name={user.full_name}
+                    name={displayName}
                     size={size}
                     className="shadow-lg border-4 border-white dark:border-[#1A1A1A]"
                 />
@@ -40,9 +46,12 @@ const PodiumItem = ({ user, rank }: { user: LeaderboardEntry, rank: number }) =>
                     {rank}
                 </div>
             </div>
-            <p className="mt-3 font-bold text-sm text-[#1A1A1A] dark:text-white max-w-[100px] truncate text-center">{user.full_name}</p>
-            <p className="text-xs font-semibold text-[#3B0764] dark:text-purple-400">{user.report_count} pts</p>
-        </div>
+            <p className="mt-3 font-bold text-sm text-[#1A1A1A] dark:text-white max-w-[100px] truncate text-center">{displayName}</p>
+            <div className="flex items-center gap-1 mt-1">
+                <span className="text-xs">{vehicle.icon}</span>
+                <p className="text-xs font-semibold text-[#3B0764] dark:text-purple-400">{user.report_count} pts</p>
+            </div>
+        </Link>
     );
 };
 
@@ -128,32 +137,45 @@ export default function LeaderboardPage() {
                     <div className="text-center py-10 text-gray-500">No data available yet.</div>
                 ) : (
                     <>
-                        {restOfBoard.map((item, index) => (
-                            <React.Fragment key={item.user_id}>
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true }}
-                                    className={`flex items-center p-3 rounded-2xl border ${item.user_id === currentUser?.id ? 'bg-[#3B0764]/5 border-[#3B0764]/20' : 'bg-white dark:bg-[#1A1A1A] border-transparent'} shadow-sm`}
+                        {restOfBoard.map((item, index) => {
+                            const displayName = item.nickname || item.full_name;
+                            const vehicle = getVehicleStatus(item.report_count * 30);
+                            
+                            return (
+                                <Link
+                                    key={item.user_id}
+                                    href={`/user/${item.user_id}`}
+                                    className="block"
                                 >
-                                    <span className="w-8 text-center font-bold text-gray-400 mr-2">#{item.rank_number}</span>
-                                    <LetterAvatar name={item.full_name} avatarUrl={item.avatar_url} size={40} />
-                                    <div className="flex-1 ml-3">
-                                        <p className={`font-semibold text-sm ${item.user_id === currentUser?.id ? 'text-[#3B0764] dark:text-purple-300' : 'text-[#1A1A1A] dark:text-white'}`}>
-                                            {item.full_name} {item.user_id === currentUser?.id && '(You)'}
-                                        </p>
-                                    </div>
-                                    <span className="font-bold text-[#3B0764] dark:text-purple-400 text-sm">{item.report_count} pts</span>
-                                </motion.div>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        whileInView={{ opacity: 1, y: 0 }}
+                                        viewport={{ once: true }}
+                                        className={`flex items-center p-3 rounded-2xl border transition-all hover:border-[#3B0764]/20 ${item.user_id === currentUser?.id ? 'bg-[#3B0764]/5 border-[#3B0764]/20' : 'bg-white dark:bg-[#1A1A1A] border-transparent'} shadow-sm`}
+                                    >
+                                        <span className="w-8 text-center font-bold text-gray-400 mr-2">#{item.rank_number}</span>
+                                        <LetterAvatar name={displayName} avatarUrl={item.avatar_url} size={40} />
+                                        <div className="flex-1 ml-3">
+                                            <div className="flex items-center gap-2">
+                                                <p className={`font-semibold text-sm ${item.user_id === currentUser?.id ? 'text-[#3B0764] dark:text-purple-300' : 'text-[#1A1A1A] dark:text-white'}`}>
+                                                    {displayName} {item.user_id === currentUser?.id && '(You)'}
+                                                </p>
+                                                <span className="text-xs opacity-70">{vehicle.icon}</span>
+                                            </div>
+                                            <p className="text-[10px] text-[#1A1A1A]/40 dark:text-white/40 font-bold uppercase tracking-wider">{vehicle.level}</p>
+                                        </div>
+                                        <span className="font-bold text-[#3B0764] dark:text-purple-400 text-sm">{item.report_count} pts</span>
+                                    </motion.div>
 
-                                {/* Ad Injection after 3rd item in list */}
-                                {index === 2 && sponsoredAd && (
-                                    <div className="py-2">
-                                        <AdvertCard advert={sponsoredAd} />
-                                    </div>
-                                )}
-                            </React.Fragment>
-                        ))}
+                                    {/* Ad Injection after 3rd item in list */}
+                                    {index === 2 && sponsoredAd && (
+                                        <div className="py-2">
+                                            <AdvertCard advert={sponsoredAd} />
+                                        </div>
+                                    )}
+                                </Link>
+                            );
+                        })}
                     </>
                 )}
             </main>
@@ -161,15 +183,15 @@ export default function LeaderboardPage() {
             {/* Current User Fixed Banner */}
             {!isLoading && currentUserRank && currentUserRank.rank_number > 3 && (
                 <div className="fixed bottom-0 left-0 right-0 bg-[#3B0764] text-white p-4 pb-6 z-40 lg:hidden">
-                    <div className="flex items-center max-w-md mx-auto">
+                    <Link href={`/user/${currentUserRank.user_id}`} className="flex items-center max-w-md mx-auto">
                         <span className="w-8 text-center font-bold text-white/80 mr-2">#{currentUserRank.rank_number}</span>
-                        <LetterAvatar name={currentUserRank.full_name} avatarUrl={currentUserRank.avatar_url} size={40} className="border-white/20" />
+                        <LetterAvatar name={currentUserRank.nickname || currentUserRank.full_name} avatarUrl={currentUserRank.avatar_url} size={40} className="border-white/20" />
                         <div className="flex-1 ml-3">
-                            <p className="font-bold text-sm">Your Rank</p>
+                            <p className="font-bold text-sm">Your Rank ({currentUserRank.nickname || 'You'})</p>
                             <p className="text-xs text-white/60">Keep reporting to climb up!</p>
                         </div>
                         <span className="font-bold text-white text-sm">{currentUserRank.report_count} pts</span>
-                    </div>
+                    </Link>
                 </div>
             )}
         </div>

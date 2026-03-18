@@ -4,6 +4,7 @@
 import { Home, Heart, LogOut, User, Bell } from 'lucide-react';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
+import { useNotifications } from '@/hooks/useNotifications';
 
 interface SidebarProps {
     userEmail?: string;
@@ -11,6 +12,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ userEmail, onSignOut }: SidebarProps) {
+    const { unreadCount } = useNotifications();
     return (
         <aside className="w-64 bg-white dark:bg-black border-r border-[var(--border)] hidden md:flex flex-col h-full z-20 shadow-sm">
             <div className="p-6 flex items-center gap-3 border-b border-[var(--border)] shrink-0">
@@ -24,17 +26,20 @@ export default function Sidebar({ userEmail, onSignOut }: SidebarProps) {
             </div>
 
             <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                <button className="flex items-center gap-3 w-full p-3 rounded-lg bg-[var(--primary)] text-white font-medium transition-colors">
+                <Link href="/dashboard" className="flex items-center gap-3 w-full p-3 rounded-lg bg-[var(--primary)] text-white font-medium transition-colors">
                     <Home size={20} /> Dashboard
-                </button>
-                <button className="flex items-center gap-3 w-full p-3 rounded-lg text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors font-medium opacity-70 hover:opacity-100">
+                </Link>
+                <Link href="/dashboard/favorites" className="flex items-center gap-3 w-full p-3 rounded-lg text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors font-medium opacity-70 hover:opacity-100">
                     <Heart size={20} /> Favorites
-                </button>
+                </Link>
                 <Link href="/dashboard/profile" className="flex items-center gap-3 w-full p-3 rounded-lg text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors font-medium opacity-70 hover:opacity-100">
                     <User size={20} /> Profile
                 </Link>
-                <Link href="/dashboard/notifications" className="flex items-center gap-3 w-full p-3 rounded-lg text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors font-medium opacity-70 hover:opacity-100">
+                <Link href="/dashboard/notifications" className="flex items-center gap-3 w-full p-3 rounded-lg text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors font-medium opacity-70 hover:opacity-100 relative">
                     <Bell size={20} /> Notifications
+                    {unreadCount > 0 && (
+                        <span className="absolute left-7 top-3 w-2 h-2 bg-red-500 rounded-full border border-white dark:border-black" />
+                    )}
                 </Link>
             </nav>
 
